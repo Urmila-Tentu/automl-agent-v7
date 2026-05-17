@@ -1,0 +1,2556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AutoML Agent v6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f9fafb; --bg3: #f3f4f6;
+  --border: #e5e7eb; --border2: #d1d5db;
+  --text: #111827; --muted: #6b7280; --muted2: #9ca3af;
+  --accent: #2563eb; --accent-light: #eff6ff; --accent-dark: #1d4ed8;
+  --green: #16a34a; --green-light: #f0fdf4;
+  --red: #dc2626; --red-light: #fef2f2;
+  --yellow: #d97706; --yellow-light: #fffbeb;
+  --purple: #7c3aed; --purple-light: #f5f3ff;
+  --radius: 8px; --radius2: 12px;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow2: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -1px rgba(0,0,0,.05);
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font); font-size: 13px; line-height: 1.5;
+  background: var(--bg); color: var(--text);
+  -webkit-font-smoothing: antialiased; min-height: 100vh;
+}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Layout */
+.shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; flex-shrink: 0; background: var(--bg);
+  border-right: 1px solid var(--border); display: flex;
+  flex-direction: column; position: fixed; top: 0; left: 0;
+  height: 100vh; z-index: 100; overflow-y: auto;
+}
+.main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+.topbar {
+  height: 52px; border-bottom: 1px solid var(--border);
+  background: var(--bg); display: flex; align-items: center;
+  justify-content: space-between; padding: 0 24px;
+  position: sticky; top: 0; z-index: 50;
+}
+.content { flex: 1; padding: 28px 28px 60px; max-width: 1280px; width: 100%; }
+
+/* Sidebar */
+.sb-logo {
+  padding: 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.sb-logo-icon {
+  width: 28px; height: 28px; background: var(--accent);
+  border-radius: 6px; display: flex; align-items: center;
+  justify-content: center; font-size: 14px; flex-shrink: 0;
+}
+.sb-logo-text { font-size: 13px; font-weight: 700; color: var(--text); }
+.sb-logo-ver { font-size: 10px; color: var(--muted2); margin-top: 1px; }
+.sb-nav { padding: 8px; flex: 1; }
+.sb-section {
+  font-size: 10px; font-weight: 600; color: var(--muted2);
+  letter-spacing: .8px; text-transform: uppercase;
+  padding: 12px 8px 4px;
+}
+.nb {
+  display: flex; align-items: center; gap: 8px; padding: 7px 8px;
+  border-radius: var(--radius); color: var(--muted); cursor: pointer;
+  transition: all .1s; font-size: 13px; font-weight: 500;
+  border: none; background: none; width: 100%; text-align: left;
+  white-space: nowrap;
+}
+.nb:hover { background: var(--bg3); color: var(--text); }
+.nb.on { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+.nb .ic { width: 16px; flex-shrink: 0; text-align: center; font-size: 13px; }
+.nb .bdg {
+  margin-left: auto; background: var(--accent); color: #fff;
+  border-radius: 10px; padding: 1px 6px; font-size: 10px; font-weight: 700;
+}
+.sb-bottom {
+  padding: 12px; border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.user-pill {
+  display: flex; align-items: center; gap: 8px; padding: 8px;
+  border-radius: var(--radius); background: var(--bg2);
+}
+.user-av {
+  width: 24px; height: 24px; background: var(--accent); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.user-name { font-size: 12px; font-weight: 600; }
+.user-role { font-size: 10px; color: var(--muted2); }
+
+/* Topbar */
+.tb-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.tb-r { display: flex; align-items: center; gap: 8px; }
+.status-dot {
+  display: flex; align-items: center; gap: 5px; font-size: 11px;
+  color: var(--muted); padding: 4px 10px; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 20px;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+/* Page transitions */
+.page { display: none; }
+.page.on { display: block; animation: fadeIn .15s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Page header */
+.ph { margin-bottom: 24px; }
+.ph-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.ph h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+.ph p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.ph-act { display: flex; gap: 7px; flex-shrink: 0; }
+
+/* Cards */
+.card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 18px;
+  box-shadow: var(--shadow);
+}
+.card + .card { margin-top: 12px; }
+.card-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+}
+
+/* Stat cards */
+.stats-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 16px;
+}
+.stat-val { font-size: 24px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+.stat-val.blue { color: var(--accent); }
+.stat-val.green { color: var(--green); }
+.stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px; border-radius: var(--radius);
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: none; transition: all .1s; font-family: var(--font);
+  white-space: nowrap; text-decoration: none;
+}
+.btn:active { transform: scale(.98); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-dark); }
+.btn-secondary { background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg3); border-color: var(--border2); }
+.btn-danger { background: var(--red-light); color: var(--red); border: 1px solid #fecaca; }
+.btn-danger:hover { background: #fee2e2; }
+.btn-lg { padding: 9px 18px; font-size: 13px; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.btn-xs { padding: 2px 7px; font-size: 10px; }
+.btn[disabled] { opacity: .4; cursor: not-allowed; pointer-events: none; }
+.btn-full { width: 100%; justify-content: center; }
+
+/* Forms */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+.inp, .sel, .txa {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 11px; color: var(--text);
+  font-size: 13px; outline: none; transition: border-color .1s;
+  font-family: var(--font);
+}
+.inp:focus, .sel:focus, .txa:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+.inp::placeholder { color: var(--muted2); }
+input[type=range] { width: 100%; accent-color: var(--accent); background: none; border: none; cursor: pointer; }
+
+/* Grids */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.g2   { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.g3   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* Upload zone */
+.drop-zone {
+  border: 2px dashed var(--border2); border-radius: var(--radius2);
+  padding: 32px 20px; text-align: center; cursor: pointer;
+  transition: all .15s; position: relative; background: var(--bg2);
+}
+.drop-zone:hover, .drop-zone.drag { border-color: var(--accent); background: var(--accent-light); }
+.drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.drop-zone h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.drop-zone p  { font-size: 12px; color: var(--muted); }
+.file-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--green-light); border: 1px solid #bbf7d0;
+  border-radius: var(--radius); padding: 5px 10px;
+  color: var(--green); font-size: 11px; margin-top: 8px;
+}
+
+/* Progress */
+.progress-wrap { background: var(--bg3); border-radius: 4px; height: 3px; overflow: hidden; margin-top: 10px; }
+.progress-bar {
+  height: 100%; background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--purple));
+  background-size: 200%; animation: prog 1.5s ease infinite;
+}
+@keyframes prog { 0% { background-position: 200%; } 100% { background-position: -200%; } }
+
+/* Training steps */
+.tsteps { margin-top: 14px; display: grid; gap: 2px; }
+.ts { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted2); padding: 3px 0; }
+.ts.active { color: var(--accent); font-weight: 500; }
+.ts.done   { color: var(--green); }
+.ts-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--border2);
+  flex-shrink: 0; transition: .2s;
+}
+.ts.active .ts-dot { background: var(--accent); }
+.ts.done   .ts-dot { background: var(--green); }
+
+/* Console */
+.console {
+  background: #0f172a; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 12px; font-family: var(--mono); font-size: 11px;
+  color: #7dd3fc; height: 160px; overflow-y: auto; line-height: 1.7;
+}
+.cl.err { color: #f87171; } .cl.ok { color: #4ade80; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+.tab {
+  padding: 8px 14px; font-size: 12px; font-weight: 500; color: var(--muted);
+  cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: .1s; background: none; border-top: none; border-left: none; border-right: none;
+  font-family: var(--font);
+}
+.tab:hover { color: var(--text); }
+.tab.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tc { display: none; } .tc.on { display: block; }
+
+/* Table */
+.tbl { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th {
+  background: var(--bg2); padding: 8px 12px; text-align: left;
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .4px;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+tbody td { padding: 9px 12px; border-bottom: 1px solid var(--bg3); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--bg2); }
+tbody tr.best td { background: var(--accent-light); }
+tbody tr.best td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+
+/* Badges */
+.badge {
+  display: inline-flex; align-items: center; padding: 2px 8px;
+  border-radius: 12px; font-size: 10px; font-weight: 600;
+}
+.badge-blue   { background: #dbeafe; color: #1d4ed8; }
+.badge-green  { background: #dcfce7; color: #15803d; }
+.badge-red    { background: #fee2e2; color: #b91c1c; }
+.badge-yellow { background: #fef9c3; color: #a16207; }
+.badge-gray   { background: var(--bg3); color: var(--muted); }
+.badge-purple { background: #ede9fe; color: #6d28d9; }
+
+/* Status badges */
+.s-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
+}
+.s-c { background: #dcfce7; color: #15803d; }
+.s-t { background: #dbeafe; color: #1d4ed8; }
+.s-f { background: #fee2e2; color: #b91c1c; }
+.s-q { background: #fef9c3; color: #a16207; }
+
+/* Feature bars */
+.fbar-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.fbar-label { font-size: 11px; color: var(--muted); width: 130px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); }
+.fbar-track { flex: 1; height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.fbar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.fbar-fill.green { background: var(--green); }
+.fbar-fill.red   { background: var(--red); }
+.fbar-val  { font-size: 10px; color: var(--muted2); width: 52px; text-align: right; font-family: var(--mono); }
+
+/* Insight boxes */
+.insight-box {
+  background: var(--accent-light); border: 1px solid #bfdbfe;
+  border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px;
+  font-size: 12px; color: var(--accent-dark); line-height: 1.6;
+}
+
+/* Experiment cards */
+.exp-card {
+  display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); cursor: pointer; transition: all .1s;
+  margin-bottom: 8px;
+}
+.exp-card:hover { border-color: var(--border2); background: var(--bg2); }
+.exp-icon {
+  width: 28px; height: 28px; border-radius: 8px; background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+}
+.exp-info { flex: 1; min-width: 0; }
+.exp-name { font-size: 13px; font-weight: 600; }
+.exp-meta { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exp-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.disk-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; color: var(--muted2); background: var(--bg3);
+  border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px;
+}
+
+/* Compare checkboxes */
+.cmp-card {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: .1s;
+}
+.cmp-card:hover { border-color: var(--border2); }
+.cmp-card input { accent-color: var(--accent); width: 14px; height: 14px; }
+.cmp-id   { font-size: 12px; font-weight: 600; color: var(--accent); font-family: var(--mono); }
+.cmp-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* Scenarios */
+.scenario-col {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 14px;
+}
+.scenario-col.active { border-color: var(--accent); background: var(--accent-light); }
+.si-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 0; border-bottom: 1px solid var(--bg3);
+}
+.si-row:last-child { border-bottom: none; }
+.si-label { width: 100px; flex-shrink: 0; font-size: 10px; color: var(--muted); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.si-pred {
+  text-align: center; padding: 12px 8px; background: var(--bg2);
+  border-radius: var(--radius); margin-top: 10px;
+}
+.si-pred-val { font-size: 22px; font-weight: 700; color: var(--green); display: block; font-family: var(--mono); }
+.si-conf { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* Prediction result */
+.pred-val {
+  font-size: 36px; font-weight: 700; color: var(--accent);
+  font-family: var(--mono); text-align: center; padding: 16px 0;
+}
+.prob-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; }
+.prob-row span:first-child { width: 80px; color: var(--muted); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prob-track { flex: 1; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.prob-fill  { height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s; }
+.prob-row span:last-child { width: 38px; text-align: right; font-family: var(--mono); }
+
+/* API code */
+.code-block {
+  background: #0f172a; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px; font-family: var(--mono);
+  font-size: 11px; color: #7dd3fc; overflow-x: auto; white-space: pre;
+  line-height: 1.7; position: relative;
+}
+.code-copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(255,255,255,.1); border: none; border-radius: 4px;
+  padding: 3px 8px; font-size: 10px; color: #94a3b8; cursor: pointer;
+  font-family: var(--font);
+}
+.code-copy-btn:hover { background: rgba(255,255,255,.2); color: #fff; }
+.lang-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,.1); margin-bottom: 4px; }
+.lang-tab {
+  padding: 6px 12px; font-size: 11px; color: #64748b; cursor: pointer;
+  background: none; border: none; font-family: var(--font); transition: .1s;
+}
+.lang-tab.on { color: #7dd3fc; }
+
+/* Deploy */
+.dep-option {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; cursor: pointer; transition: .1s; margin-bottom: 8px;
+}
+.dep-option:hover, .dep-option.on { border-color: var(--accent); background: var(--accent-light); }
+.dep-option-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.dep-option-desc  { font-size: 11px; color: var(--muted); }
+
+/* Narrative */
+.narr-section {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 18px 20px;
+  margin-bottom: 12px; border-left: 3px solid var(--accent);
+}
+.narr-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.narr-text  { font-size: 12px; color: var(--muted); line-height: 1.75; }
+
+/* Doctor */
+.diag-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; margin-bottom: 8px;
+}
+.diag-card.healthy { border-color: #bbf7d0; background: var(--green-light); }
+.diag-card.warning { border-color: #fde68a; background: var(--yellow-light); }
+.diag-card.critical { border-color: #fecaca; background: var(--red-light); }
+.diag-card.info { border-color: #bfdbfe; background: var(--accent-light); }
+.diag-category { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 4px; }
+.diag-finding  { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.diag-rx { font-size: 12px; color: var(--muted); }
+
+/* Data profile */
+.col-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px; margin-bottom: 6px;
+  font-size: 11px;
+}
+.col-name { font-weight: 600; font-family: var(--mono); font-size: 12px; }
+.col-meta { color: var(--muted); margin-top: 2px; }
+.col-stat { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
+.col-stat-item { font-size: 10px; }
+.col-stat-val { font-weight: 600; font-family: var(--mono); }
+.col-stat-lbl { color: var(--muted2); }
+
+/* Counterfactual */
+.cf-card {
+  background: var(--green-light); border: 1px solid #bbf7d0;
+  border-radius: var(--radius2); padding: 14px; margin-bottom: 10px;
+}
+.cf-row {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+  padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,.05);
+}
+.cf-row:last-child { border-bottom: none; }
+.cf-feat { width: 140px; font-family: var(--mono); font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cf-from, .cf-to { font-family: var(--mono); font-size: 11px; }
+.cf-to { color: var(--green); font-weight: 600; }
+.cf-arrow { color: var(--yellow); font-weight: 700; }
+
+/* Spinner */
+.spinner {
+  text-align: center; padding: 36px;
+  color: var(--muted); font-size: 12px;
+}
+.dots { display: flex; gap: 4px; justify-content: center; margin-bottom: 8px; }
+.dots span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  animation: dotpop .9s ease infinite;
+}
+.dots span:nth-child(2) { animation-delay: .15s; }
+.dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes dotpop { 0%,80%,100% { transform: scale(.7); opacity: .5; } 40% { transform: scale(1); opacity: 1; } }
+
+/* Empty state */
+.empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+.empty-icon { font-size: 36px; margin-bottom: 12px; opacity: .3; }
+.empty h3  { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
+.empty p   { font-size: 12px; }
+
+/* Misc utils */
+.mono { font-family: var(--mono); font-size: 11px; }
+.text-sm { font-size: 11px; }
+.text-muted { color: var(--muted); }
+.text-green { color: var(--green); }
+.text-red   { color: var(--red); }
+.text-accent { color: var(--accent); }
+.cw { position: relative; width: 100%; }
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon">🤖</div>
+    <div><div class="sb-logo-text">AutoML Agent</div><div class="sb-logo-ver">v6.0 · Platform</div></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Overview</div>
+    <button class="nb on" id="nb-dashboard" onclick="go('dashboard')"><span class="ic">◈</span>Dashboard</button>
+    <div class="sb-section">Experiments</div>
+    <button class="nb" id="nb-train" onclick="go('train')"><span class="ic">+</span>New Experiment</button>
+    <button class="nb" id="nb-experiments" onclick="go('experiments')"><span class="ic">≡</span>Experiments<span class="bdg" id="expBadge">0</span></button>
+    <button class="nb" id="nb-compare" onclick="go('compare')"><span class="ic">⇄</span>Compare</button>
+    <div class="sb-section">Analysis</div>
+    <button class="nb" id="nb-eda" onclick="go('eda')"><span class="ic">📊</span>EDA Report</button>
+    <button class="nb" id="nb-sensitivity" onclick="go('sensitivity')"><span class="ic">🌪</span>Sensitivity</button>
+    <button class="nb" id="nb-doctor" onclick="go('doctor')"><span class="ic">🩺</span>Model Doctor</button>
+    <button class="nb" id="nb-profile" onclick="go('profile')"><span class="ic">📋</span>Data Profile</button>
+    <button class="nb" id="nb-counterfactual" onclick="go('counterfactual')"><span class="ic">🔀</span>Counterfactual</button>
+    <button class="nb" id="nb-interaction" onclick="go('interaction')"><span class="ic">⊞</span>Feature Interaction</button>
+    <button class="nb" id="nb-narrative" onclick="go('narrative')"><span class="ic">📖</span>AutoNarrative</button>
+    <div class="sb-section">🤖 Agent AI</div>
+    <button class="nb" id="nb-agent" onclick="go('agent')"><span class="ic">🤖</span>Agent Train</button>
+    <button class="nb" id="nb-agent-chat" onclick="go('agent-chat')"><span class="ic">💬</span>Chat</button>
+    <button class="nb" id="nb-agent-settings" onclick="go('agent-settings')"><span class="ic">⚙</span>Agent Settings</button>
+    <div class="sb-section">Production</div>
+    <button class="nb" id="nb-predict" onclick="go('predict')"><span class="ic">▶</span>Predict</button>
+    <button class="nb" id="nb-whatif" onclick="go('whatif')"><span class="ic">⚡</span>Scenarios</button>
+    <button class="nb" id="nb-deploy" onclick="go('deploy')"><span class="ic">⬡</span>Deploy</button>
+    <button class="nb" id="nb-reports" onclick="go('reports')"><span class="ic">📄</span>Reports</button>
+  </nav>
+  <div class="sb-bottom">
+    <div class="user-pill">
+      <div class="user-av" id="userAvatar">A</div>
+      <div><div class="user-name" id="userName">admin</div><div class="user-role">Open access</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="tb-title" id="tbTitle">Dashboard</div>
+    <div class="tb-r">
+      <div class="status-dot"><span class="dot"></span>Connected</div>
+      <button class="btn btn-secondary btn-sm" onclick="refreshCurrent()">↺ Refresh</button>
+      <a href="/docs" target="_blank" class="btn btn-secondary btn-sm">API ↗</a>
+    </div>
+  </div>
+  <div class="content">
+
+<!-- DASHBOARD -->
+<div class="page on" id="page-dashboard">
+  <div class="ph"><div class="ph-top">
+    <div><h1>Dashboard</h1><p>Overview of all AutoML experiments and model performance.</p></div>
+    <div class="ph-act"><button class="btn btn-primary btn-lg" onclick="go('train')">+ New Experiment</button></div>
+  </div></div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val blue" id="st-total">—</div><div class="stat-label">Total Experiments</div></div>
+    <div class="stat-card"><div class="stat-val green" id="st-done">—</div><div class="stat-label">Completed</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-models">—</div><div class="stat-label">Models Trained</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-acc">—</div><div class="stat-label">Avg Best Score</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-mem">—</div><div class="stat-label">In Memory</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">Recent Experiments</div><div id="dashExpList"><div class="empty"><div class="empty-icon">◎</div><h3>No experiments yet</h3><p>Upload a dataset to begin.</p></div></div></div>
+    <div>
+      <div class="card"><div class="card-title">Performance Overview</div><div class="cw" style="height:200px"><canvas id="dashChart"></canvas></div></div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">What can AutoML Agent do?</div>
+        <div class="row2" style="gap:8px">
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:10px"><div style="font-weight:600;font-size:12px;margin-bottom:2px">🩺 Model Doctor</div><div style="font-size:11px;color:var(--muted)">Automated health check & prescriptions</div></div>
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:10px"><div style="font-weight:600;font-size:12px;margin-bottom:2px">🔀 Counterfactual</div><div style="font-size:11px;color:var(--muted)">Min change to flip predictions</div></div>
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:10px"><div style="font-weight:600;font-size:12px;margin-bottom:2px">📋 Data Profile</div><div style="font-size:11px;color:var(--muted)">Business-ready data quality report</div></div>
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:10px"><div style="font-weight:600;font-size:12px;margin-bottom:2px">⚡ Scenarios</div><div style="font-size:11px;color:var(--muted)">Multi-scenario what-if comparison</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRAIN -->
+<div class="page" id="page-train">
+  <div class="ph"><div class="ph-top"><div><h1>New Experiment</h1><p>Upload a dataset, configure the pipeline, and launch AutoML training.</p></div></div></div>
+  <div class="g2" style="align-items:start">
+    <div>
+      <div class="card">
+        <div class="card-title">Dataset</div>
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileIn" accept=".csv,.xlsx,.xls" onchange="onFileSelect(this)"/>
+          <div style="font-size:32px;margin-bottom:8px">☁</div>
+          <h3>Drop file or click to browse</h3>
+          <p>CSV or Excel · max 200MB</p>
+          <div id="fileBadge"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Configuration</div>
+        <div class="row2">
+          <div class="field"><label>Target Column *</label><input class="inp" id="cfgTarget" placeholder="e.g. price, survived"/></div>
+          <div class="field"><label>Experiment Name</label><input class="inp" id="cfgName" placeholder="optional label"/></div>
+        </div>
+        <div class="row3">
+          <div class="field"><label>Problem Type</label>
+            <select class="sel" id="cfgProb"><option value="">Auto-detect</option><option value="classification">Classification</option><option value="regression">Regression</option></select></div>
+          <div class="field"><label>Feature Selection</label>
+            <select class="sel" id="cfgFeat"><option value="mutual_info">Mutual Info</option><option value="model_based">Model-Based (RF)</option><option value="none">None</option></select></div>
+          <div class="field"><label>HPO Trials</label>
+            <select class="sel" id="cfgTrials"><option value="10">10 (fast)</option><option value="25" selected>25</option><option value="50">50 (thorough)</option></select></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <input type="checkbox" id="cfgOut" checked style="accent-color:var(--accent)"/>
+          <label style="font-size:12px;color:var(--muted)">Outlier handling (IQR clipping)</label>
+        </div>
+        <button class="btn btn-primary btn-lg btn-full" onclick="startTrain()" id="launchBtn">🚀 Launch AutoML Pipeline</button>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="trainStatus" style="display:none">
+        <div class="card-title">Training Progress</div>
+        <div id="trainMsg" style="font-size:12px;margin-bottom:10px"></div>
+        <div class="progress-wrap"><div class="progress-bar"></div></div>
+        <div class="tsteps" id="trainSteps"></div>
+        <div class="console" id="trainConsole" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXPERIMENTS -->
+<div class="page" id="page-experiments">
+  <div class="ph"><div class="ph-top">
+    <div><h1>Experiments</h1><p>All training runs. Click to view results. Ghost experiments (disk-only) can be cleared.</p></div>
+    <div class="ph-act">
+      <button class="btn btn-secondary btn-sm" onclick="clearGhosts()">🗑 Clear Ghosts</button>
+    </div>
+  </div></div>
+  <div class="g2" style="align-items:start">
+    <div id="expListEl"><div class="empty"><div class="empty-icon">≡</div><h3>No experiments yet</h3></div></div>
+    <div id="expResults"></div>
+  </div>
+</div>
+
+<!-- COMPARE -->
+<div class="page" id="page-compare">
+  <div class="ph"><div class="ph-top"><div><h1>Compare</h1><p>Select experiments to compare metrics and features side-by-side.</p></div></div></div>
+  <div class="card" style="max-width:800px;margin-bottom:18px">
+    <div class="card-title">Select Experiments</div>
+    <div id="compareList"></div>
+    <button class="btn btn-primary" style="margin-top:8px" onclick="runCompare()">⇄ Compare Selected</button>
+  </div>
+  <div id="compareResults"></div>
+</div>
+
+<!-- EDA -->
+<div class="page" id="page-eda">
+  <div class="ph"><div class="ph-top"><div><h1>EDA Report</h1><p>Full exploratory analysis — distributions, correlations, bivariate plots.</p></div></div></div>
+  <div class="field" style="max-width:400px;margin-bottom:18px">
+    <label>Experiment (in-memory)</label>
+    <select class="sel" id="edaSel" onchange="loadEDA()"><option value="">Select experiment…</option></select>
+  </div>
+  <div id="edaOut"></div>
+</div>
+
+<!-- SENSITIVITY -->
+<div class="page" id="page-sensitivity">
+  <div class="ph"><div class="ph-top"><div><h1>Sensitivity Analysis</h1><p>Tornado chart — which features most influence predictions when varied ±2σ.</p></div></div></div>
+  <div class="row2" style="max-width:700px;margin-bottom:18px;align-items:end">
+    <div class="field"><label>Experiment (in-memory)</label>
+      <select class="sel" id="sensSel" onchange="loadSensSchema()"><option value="">Select…</option></select></div>
+    <div><button class="btn btn-primary" onclick="runSensitivity()">🌪 Run Analysis</button></div>
+  </div>
+  <div id="sensForm"></div>
+  <div id="sensOut"></div>
+</div>
+
+<!-- MODEL DOCTOR -->
+<div class="page" id="page-doctor">
+  <div class="ph"><div class="ph-top"><div>
+    <h1>Model Doctor</h1>
+    <p>Automated diagnostic engine — finds data leakage, class imbalance, feature dominance, and prescribes fixes.</p>
+  </div></div></div>
+  <div class="field" style="max-width:400px;margin-bottom:18px">
+    <label>Experiment (in-memory)</label>
+    <select class="sel" id="doctorSel" onchange="loadDoctor()"><option value="">Select…</option></select>
+  </div>
+  <div id="doctorOut"></div>
+</div>
+
+<!-- DATA PROFILE -->
+<div class="page" id="page-profile">
+  <div class="ph"><div class="ph-top"><div>
+    <h1>Data Profile</h1>
+    <p>Business-ready column-by-column data quality report. Understand your dataset before decisions.</p>
+  </div></div></div>
+  <div class="field" style="max-width:400px;margin-bottom:18px">
+    <label>Experiment (in-memory)</label>
+    <select class="sel" id="profileSel" onchange="loadProfile()"><option value="">Select…</option></select>
+  </div>
+  <div id="profileOut"></div>
+</div>
+
+<!-- COUNTERFACTUAL -->
+<div class="page" id="page-counterfactual">
+  <div class="ph"><div class="ph-top"><div>
+    <h1>Counterfactual Explorer</h1>
+    <p>Find the minimum feature change to flip the model's prediction. Essential for understanding decision boundaries.</p>
+  </div></div></div>
+  <div class="row2" style="max-width:700px;margin-bottom:14px;align-items:end">
+    <div class="field"><label>Experiment (in-memory)</label>
+      <select class="sel" id="cfSel" onchange="loadCFSchema()"><option value="">Select…</option></select></div>
+    <div><button class="btn btn-primary" onclick="runCounterfactual()" id="cfRunBtn">🔀 Find Counterfactuals</button></div>
+  </div>
+  <div id="cfForm"></div>
+  <div id="cfOut" style="margin-top:18px"></div>
+</div>
+
+<!-- FEATURE INTERACTION -->
+<div class="page" id="page-interaction">
+  <div class="ph"><div class="ph-top"><div><h1>Feature Interaction</h1><p>Visualize how two features jointly influence the model's predictions.</p></div></div></div>
+  <div class="row3" style="max-width:800px;margin-bottom:18px;align-items:end">
+    <div class="field"><label>Experiment</label>
+      <select class="sel" id="ixSel" onchange="loadIxFeatures()"><option value="">Select…</option></select></div>
+    <div class="field"><label>Feature A</label><select class="sel" id="ixFeatA"><option>—</option></select></div>
+    <div class="field"><label>Feature B</label><select class="sel" id="ixFeatB"><option>—</option></select></div>
+  </div>
+  <button class="btn btn-primary" onclick="runInteraction()" style="margin-bottom:20px">⊞ Explore</button>
+  <div id="ixOut"></div>
+</div>
+
+<!-- NARRATIVE -->
+<div class="page" id="page-narrative">
+  <div class="ph"><div class="ph-top"><div><h1>AutoNarrative</h1><p>AI-generated plain-language story about your dataset and model.</p></div></div></div>
+  <div class="field" style="max-width:400px;margin-bottom:18px">
+    <label>Experiment</label>
+    <select class="sel" id="narrSel" onchange="loadNarrative()"><option value="">Select…</option></select>
+  </div>
+  <div id="narrOut"></div>
+</div>
+
+<!-- PREDICT -->
+<div class="page" id="page-predict">
+  <div class="ph"><div class="ph-top"><div><h1>Predict</h1><p>Single prediction form · Batch CSV · API code.</p></div></div></div>
+  <div class="field" style="max-width:400px;margin-bottom:18px">
+    <label>Experiment</label>
+    <select class="sel" id="predSel" onchange="loadSchema()"><option value="">Select…</option></select>
+  </div>
+  <div id="predMemWarn" style="display:none;margin-bottom:14px">
+    <div style="background:var(--yellow-light);border:1px solid #fde68a;border-radius:var(--radius);padding:12px;font-size:12px;color:var(--yellow)">
+      ⚠️ Model not in memory. <b>Retrain to enable predictions.</b>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab('pred','form',this)">Form</button>
+    <button class="tab" onclick="switchTab('pred','batch',this)">Batch CSV</button>
+    <button class="tab" onclick="switchTab('pred','api',this)">API Code</button>
+  </div>
+  <div class="tc on" id="pred-form">
+    <div class="g2" style="align-items:start">
+      <div>
+        <div class="card" id="predFormCard" style="display:none">
+          <div class="card-title" style="justify-content:space-between">Input Values
+            <div style="display:flex;gap:5px">
+              <button class="btn btn-secondary btn-xs" onclick="fillDefaults()">Defaults</button>
+              <button class="btn btn-secondary btn-xs" onclick="fillRandom()">Random</button>
+            </div>
+          </div>
+          <div id="predForm"></div>
+          <div style="margin-top:12px"><button class="btn btn-primary btn-full" onclick="runPredict()">▶ Predict</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="card" id="predLoadingCard" style="display:none">
+          <div class="spinner"><div class="dots"><span></span><span></span><span></span></div>Running prediction…</div>
+        </div>
+        <div id="predResultCard"></div>
+        <div id="predExplCard" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="tc" id="pred-batch">
+    <div class="card" style="max-width:700px">
+      <div class="card-title">Batch CSV Upload</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Upload a CSV with the same feature columns. Max 10,000 rows.</p>
+      <div class="field"><label>CSV File</label><input type="file" id="batchFile" accept=".csv" class="inp"/></div>
+      <button class="btn btn-primary" onclick="runBatch()" id="batchBtn">Upload & Predict</button>
+      <div id="batchOut" style="margin-top:14px"></div>
+    </div>
+  </div>
+  <div class="tc" id="pred-api">
+    <div class="card" style="max-width:800px">
+      <div class="card-title">API Code</div>
+      <div id="apiOut"><div class="empty"><div class="empty-icon">{ }</div><h3>Select an experiment above</h3></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENARIOS -->
+<div class="page" id="page-whatif">
+  <div class="ph"><div class="ph-top"><div><h1>Scenario Analysis</h1><p>Compare up to 3 feature scenarios side-by-side with live predictions.</p></div></div></div>
+  <div class="field" style="max-width:400px;margin-bottom:18px">
+    <label>Experiment (in-memory)</label>
+    <select class="sel" id="wiSel" onchange="loadWI()"><option value="">Select…</option></select>
+  </div>
+  <div id="wiOut"></div>
+</div>
+
+<!-- DEPLOY -->
+<div class="page" id="page-deploy">
+  <div class="ph"><div class="ph-top"><div><h1>Deploy</h1><p>Export model as Python bundle, local FastAPI server, or Docker container.</p></div></div></div>
+  <div class="field" style="max-width:400px;margin-bottom:18px">
+    <label>Experiment</label>
+    <select class="sel" id="depSel" onchange="onDepSel()"><option value="">Select…</option></select>
+  </div>
+  <div id="depContent"><div class="empty"><div class="empty-icon">⬡</div><h3>Select an experiment above</h3></div></div>
+</div>
+
+<!-- AGENT TRAIN -->
+<div class="page" id="page-agent">
+  <div class="ph"><div class="ph-top">
+    <div><h1>🤖 Agentic AutoML</h1>
+    <p>LLM-powered training — Claude analyzes your dataset, chooses models, tunes hyperparameters, reflects on results, and explains everything in plain English.</p></div>
+    <div class="ph-act"><button class="btn btn-secondary btn-sm" onclick="go('agent-settings')">⚙ Configure LLM</button></div>
+  </div></div>
+  <div id="agentStatusBanner" style="display:none;margin-bottom:16px"></div>
+  <div class="g2" style="align-items:start">
+    <div>
+      <div class="card">
+        <div class="card-title">Dataset</div>
+        <div class="drop-zone" id="agentDropZone">
+          <input type="file" id="agentFileIn" accept=".csv,.xlsx" onchange="onAgentFile(this)"/>
+          <div style="font-size:32px;margin-bottom:8px">🤖</div>
+          <h3>Drop dataset — Agent decides everything</h3>
+          <p>CSV or Excel · Agent selects models, preprocessing, and HPO automatically</p>
+          <div id="agentFileBadge"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Minimal Config</div>
+        <div class="row2">
+          <div class="field"><label>Target Column *</label><input class="inp" id="agentTarget" placeholder="e.g. price, survived"/></div>
+          <div class="field"><label>Dataset Name</label><input class="inp" id="agentName" placeholder="optional"/></div>
+        </div>
+        <div style="background:var(--accent-light);border:1px solid #bfdbfe;border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;font-size:11px;color:var(--accent-dark)">
+          <b>The agent will automatically decide:</b> which models to train, how many HPO trials, which preprocessing strategy, what metric to optimize, and whether a second pass is needed.
+        </div>
+        <button class="btn btn-primary btn-lg btn-full" id="agentLaunchBtn" onclick="startAgentTrain()">🤖 Launch Agentic AutoML</button>
+      </div>
+    </div>
+    <div>
+      <div id="agentProgress" style="display:none">
+        <!-- Multi-agent status bar -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px" id="agentAgentBars">
+          <div class="card" style="padding:10px;border-left:3px solid var(--muted2)" id="bar-data">
+            <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;margin-bottom:4px">🔍 DataAgent</div>
+            <div style="font-size:11px" id="barDataStatus">Waiting…</div>
+          </div>
+          <div class="card" style="padding:10px;border-left:3px solid var(--muted2)" id="bar-model">
+            <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;margin-bottom:4px">🤖 ModelAgent</div>
+            <div style="font-size:11px" id="barModelStatus">Waiting…</div>
+          </div>
+          <div class="card" style="padding:10px;border-left:3px solid var(--muted2)" id="bar-insight">
+            <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;margin-bottom:4px">✍️ InsightAgent</div>
+            <div style="font-size:11px" id="barInsightStatus">Waiting…</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" id="agentPhase" style="color:var(--accent)">Starting…</div>
+          <div class="progress-wrap" style="margin-bottom:8px"><div class="progress-bar"></div></div>
+          <!-- ReAct iteration tracker -->
+          <div id="reactIterations" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"></div>
+          <div class="console" id="agentConsole" style="height:200px"></div>
+        </div>
+      </div>
+      <div id="agentLiveReasoning" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AGENT CHAT -->
+<div class="page" id="page-agent-chat">
+  <div class="ph"><div class="ph-top">
+    <div><h1>💬 AI Chat</h1>
+    <p>Ask the agent anything about your dataset, model, results, or ML in general.</p></div>
+  </div></div>
+  <div class="g2" style="align-items:start">
+    <div>
+      <div class="field">
+        <label>Experiment context (optional)</label>
+        <select class="sel" id="chatExpSel" onchange="loadChatHistory()"><option value="">No context — general chat</option></select>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="chatMessages" style="height:420px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="text-align:center;padding:32px;color:var(--muted)">
+            <div style="font-size:32px;margin-bottom:8px">💬</div>
+            <p>Ask me anything about your ML experiments</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px">
+              ${["Why did LightGBM win?","What does feature importance mean?","Is my model good enough for production?","How can I improve accuracy?","Explain the top feature"].map(q=>`<button class="btn btn-secondary btn-xs" onclick="sendQuickChat('${q}')">${q}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding:12px;display:flex;gap:8px">
+          <input class="inp" id="chatInput" placeholder="Ask anything…" style="flex:1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"/>
+          <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">Send</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="agentInsightsCard" style="display:none">
+        <div class="card-title">🧠 Agent Insights</div>
+        <div id="agentInsightsContent"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">Quick Actions</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn btn-secondary btn-sm btn-full" onclick="sendQuickChat('Summarize this experiment in plain English')">📊 Plain English Summary</button>
+          <button class="btn btn-secondary btn-sm btn-full" onclick="sendQuickChat('What are the biggest risks of deploying this model?')">⚠️ Deployment Risks</button>
+          <button class="btn btn-secondary btn-sm btn-full" onclick="sendQuickChat('What features should I collect more data for?')">📈 Data Collection Advice</button>
+          <button class="btn btn-secondary btn-sm btn-full" onclick="sendQuickChat('Compare all the models that were trained')">⇄ Compare Models</button>
+          <button class="btn btn-secondary btn-sm btn-full" onclick="sendQuickChat('What hyperparameters matter most for the best model?')">🔧 Key Hyperparameters</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AGENT SETTINGS -->
+<div class="page" id="page-agent-settings">
+  <div class="ph"><div class="ph-top"><div>
+    <h1>⚙ Agent Settings</h1>
+    <p>Configure the LLM brain. Without an API key, a smart rule-based planner is used automatically.</p>
+  </div></div></div>
+  <div class="g2" style="align-items:start">
+    <div>
+      <div class="card">
+        <div class="card-title">Anthropic API Key</div>
+        <div style="background:var(--accent-light);border:1px solid #bfdbfe;border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;font-size:11px;color:var(--accent-dark);line-height:1.8">
+          <b>How to get an API key:</b><br/>
+          1. Go to <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent);font-weight:600">console.groq.com/keys</a><br/>
+          2. Click <b>Create API Key</b> (free tier available!)<br/>
+          3. Copy the key (starts with <code>gsk_</code>) and paste below
+        </div>
+        <div class="field">
+          <label>API Key</label>
+          <input class="inp" id="agentApiKey" type="password" placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"/>
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <select class="sel" id="agentModel">
+            <option value="llama-3.1-8b-instant" selected>Llama 3.1 8B Instant (default · fastest · free tier)</option>
+            <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile (smarter chat &amp; insights)</option>
+            <option value="llama3-70b-8192">Llama 3 70B (balanced · 8k context)</option>
+            <option value="gemma2-9b-it">Gemma 2 9B (fast · Google)</option>
+            <option value="mixtral-8x7b-32768">Mixtral 8x7B (long context · 32k)</option>
+          </select>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">
+            Plan &amp; reflect always use 8B-Instant. Your choice applies to chat &amp; insights.
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveAgentConfig()">Save Config</button>
+          <button class="btn btn-secondary" onclick="testAgentKey()">✓ Test Key</button>
+        </div>
+        <div id="agentConfigStatus" style="margin-top:10px;font-size:12px"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="agentStatusCard">
+        <div class="card-title">Agent Status</div>
+        <div id="agentStatusDetail">
+          <div class="spinner"><div class="dots"><span></span><span></span><span></span></div>Loading…</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">What the Agent Does</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.8">
+          <div style="margin-bottom:8px"><b style="color:var(--text)">🔍 Dataset Analysis</b><br/>Examines shape, missing values, class balance, correlations, skewness</div>
+          <div style="margin-bottom:8px"><b style="color:var(--text)">🧠 Strategy Planning</b><br/>Chooses models, preprocessing, HPO trials via LLM reasoning</div>
+          <div style="margin-bottom:8px"><b style="color:var(--text)">🔄 Adaptive Reflection</b><br/>Reviews results and optionally triggers a second training pass</div>
+          <div><b style="color:var(--text)">✍️ Insight Generation</b><br/>Produces plain-English summaries, risks, and next steps</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <div class="ph"><div class="ph-top"><div><h1>Reports</h1><p>Model Card &amp; downloadable HTML report.</p></div></div></div>
+  <div class="field" style="max-width:400px;margin-bottom:18px">
+    <label>Experiment</label>
+    <select class="sel" id="repSel" onchange="loadReport()"><option value="">Select…</option></select>
+  </div>
+  <div id="repOut"></div>
+</div>
+
+  </div>
+</div>
+</div>
+
+<script>
+let TOKEN='open', SCHEMA=null, WI_SCHEMA=null, SENS_SCHEMA=null, CF_SCHEMA=null;
+let POLL=null, CH={}, WI_PREDS={}, WI_DEBOUNCE={};
+const PAL=['#2563eb','#7c3aed','#059669','#d97706','#dc2626','#0891b2'];
+// Global experiment cache — avoids API hammering on every tab switch and preserves selections
+let EXP_CACHE=[], EXP_CACHE_TS=0;
+async function getExps(force=false){
+  if(!force && Date.now()-EXP_CACHE_TS<30000 && EXP_CACHE.length) return EXP_CACHE;
+  try{ EXP_CACHE=await(await fetch('/experiments',{headers:ah()})).json(); EXP_CACHE_TS=Date.now(); }catch(e){}
+  return EXP_CACHE;
+}
+function fillSel(id,list,filter,noMem=false){
+  const el=q(id);if(!el)return;
+  const prev=el.value;
+  const mem=noMem?list:list.filter(e=>e.in_memory);
+  const shown=filter?filter(list):mem;
+  el.innerHTML=`<option value="">Select experiment…</option>`+shown.map(e=>`<option value="${e.experiment_id}">${esc(e.dataset_name||e.experiment_id)} · ${e.target_col||'?'}</option>`).join('');
+  if(prev && shown.some(e=>e.experiment_id===prev)) el.value=prev; // restore selection
+}
+
+function ah(){return{'Authorization':'Bearer '+TOKEN,'Content-Type':'application/json'};}
+function q(id){return document.getElementById(id);}
+function show(id){const e=q(id);if(e)e.style.display='';}
+function hide(id){const e=q(id);if(e)e.style.display='none';}
+function esc(s){const d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML;}
+function sid(n){return String(n).replace(/[^a-zA-Z0-9]/g,'_');}
+function spin(){return'<div class="spinner"><div class="dots"><span></span><span></span><span></span></div>Loading…</div>';}
+function cw(h,id){return`<div class="cw" style="height:${h}px;position:relative"><canvas id="${id}"></canvas></div>`;}
+function switchTab(pg,tab,el){
+  document.querySelectorAll(`[id^="${pg}-"]`).forEach(x=>x.classList.remove('on'));
+  const t=q(pg+'-'+tab);if(t)t.classList.add('on');
+  el.closest('.tabs').querySelectorAll('.tab').forEach(t2=>t2.classList.remove('on'));
+  el.classList.add('on');
+}
+window.addEventListener('DOMContentLoaded',()=>{boot();setupDrop();});
+function boot(){loadDashboard();fillAllSels();updateExpBadge();}
+
+const TITLES={dashboard:'Dashboard',train:'New Experiment',experiments:'Experiments',compare:'Compare',
+  eda:'EDA Report',sensitivity:'Sensitivity Analysis',doctor:'Model Doctor',profile:'Data Profile',
+  counterfactual:'Counterfactual Explorer',interaction:'Feature Interaction',narrative:'AutoNarrative',
+  predict:'Predict',whatif:'Scenario Analysis',deploy:'Deploy',reports:'Reports'};
+
+function go(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  const pg=q('page-'+name);if(pg)pg.classList.add('on');
+  const nb=q('nb-'+name);if(nb)nb.classList.add('on');
+  q('tbTitle').textContent=TITLES[name]||name;
+  // Only trigger data-loading actions (not fill functions — they use cache and preserve selection)
+  if(name==='dashboard') loadDashboard();
+  if(name==='experiments') loadExps();
+  if(name==='compare') loadCompareList();
+}
+function refreshCurrent(){const a=document.querySelector('.nb.on');if(a)go(a.id.replace('nb-',''));}
+async function fillAllSels(){
+  const list=await getExps(true); // force refresh
+  fillSel('edaSel',list,l=>l.filter(e=>e.status==='completed'&&e.in_memory));
+  fillSel('sensSel',list,l=>l.filter(e=>e.status==='completed'&&e.in_memory));
+  fillSel('doctorSel',list,l=>l.filter(e=>e.status==='completed'&&e.in_memory));
+  fillSel('profileSel',list,l=>l.filter(e=>e.status==='completed'&&e.in_memory));
+  fillSel('cfSel',list,l=>l.filter(e=>e.status==='completed'&&e.in_memory));
+  fillSel('wiSel',list,l=>l.filter(e=>e.status==='completed'&&e.in_memory));
+  fillSel('ixSel',list,l=>l.filter(e=>e.status==='completed'&&e.in_memory));
+  fillSel('predSel',list,l=>l.filter(e=>e.status==='completed'),true);
+  fillSel('depSel',list,l=>l.filter(e=>e.status==='completed'),true);
+  fillSel('repSel',list,l=>l.filter(e=>e.status==='completed'),true);
+  fillSel('narrSel',list,l=>l.filter(e=>e.status==='completed'),true);
+  updateExpBadge(list.length);
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+function setupDrop(){
+  const z=q('dropZone');if(!z)return;
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag')});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');
+    if(e.dataTransfer.files[0]){q('fileIn').files=e.dataTransfer.files;onFileSelect({files:e.dataTransfer.files});}});
+}
+function onFileSelect(inp){
+  const f=inp.files[0];if(!f)return;
+  q('fileBadge').innerHTML=`<div class="file-badge">✓ ${esc(f.name)} · ${(f.size/1024/1024).toFixed(2)} MB</div>`;
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard(){
+  try{
+    const d=await(await fetch('/api/stats',{headers:ah()})).json();
+    q('st-total').textContent=d.total_experiments??'—';
+    q('st-done').textContent=d.completed??'—';
+    q('st-models').textContent=d.total_models_trained||'—';
+    q('st-acc').textContent=d.avg_best_accuracy?(d.avg_best_accuracy*100).toFixed(1)+'%':d.avg_best_r2!=null?'R²'+d.avg_best_r2:'—';
+    q('st-mem').textContent=(d.in_memory||0)+' / '+(d.completed||0);
+    updateExpBadge(d.total_experiments);
+  }catch(e){}
+  try{
+    const list=await(await fetch('/experiments',{headers:ah()})).json();
+    const recent=list.slice(-6).reverse();
+    const el=q('dashExpList');
+    if(!recent.length){el.innerHTML='<div class="empty"><div class="empty-icon">◎</div><h3>No experiments yet</h3></div>';return;}
+    el.innerHTML=recent.map(e=>`<div class="exp-card" onclick="go('experiments');setTimeout(()=>viewExp('${e.experiment_id}'),100)">
+      <div class="exp-icon">${e.status==='completed'?'✓':e.status==='training'?'⟳':'○'}</div>
+      <div class="exp-info"><div class="exp-name">${esc(e.dataset_name||e.experiment_id)}</div>
+      <div class="exp-meta">id:${e.experiment_id} · target:${e.target_col||'—'}</div></div>
+      <div class="exp-actions">${!e.in_memory?'<span class="disk-tag">💾</span>':''}
+      <span class="s-badge s-${e.status[0]}">${e.status}</span></div></div>`).join('');
+    const comp=list.filter(e=>e.status==='completed');
+    if(comp.length) drawDashChart(comp);
+  }catch(e){}
+}
+async function drawDashChart(list){
+  const ctx=q('dashChart');if(!ctx)return;if(CH.dash)CH.dash.destroy();
+  const top=list.slice(-8);
+  const results=await Promise.all(top.map(e=>fetch('/experiments/'+e.experiment_id+'/results',{headers:ah()}).then(r=>r.ok?r.json():null)));
+  const labels=[],vals=[];
+  results.forEach((r,i)=>{if(!r)return;labels.push((top[i].dataset_name||top[i].experiment_id).slice(0,14));const bm=r.best_metrics||{};vals.push(bm.accuracy||bm.r2||0);});
+  CH.dash=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:labels.map((_,i)=>PAL[i%6]+'cc'),borderRadius:4,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false,grid:{color:'#f3f4f6'},ticks:{color:'#9ca3af',font:{size:9}}},x:{grid:{display:false},ticks:{color:'#9ca3af',font:{size:9}}}}}});
+}
+function updateExpBadge(n){const el=q('expBadge');if(!el)return;if(n===undefined)fetch('/api/stats',{headers:ah()}).then(r=>r.json()).then(d=>el.textContent=d.total_experiments||0).catch(()=>{});else el.textContent=n;}
+
+// ── Train ─────────────────────────────────────────────────────────────────────
+async function startTrain(){
+  const file=q('fileIn').files[0],target=q('cfgTarget').value.trim();
+  if(!file){alert('Select a dataset file.');return;}if(!target){alert('Enter target column name.');return;}
+  q('launchBtn').disabled=true;q('launchBtn').textContent='Launching…';
+  const fd=new FormData();fd.append('file',file);fd.append('target_col',target);
+  fd.append('dataset_name',(q('cfgName')?.value||'').trim());fd.append('problem_type',q('cfgProb').value);
+  fd.append('feature_selection',q('cfgFeat').value);fd.append('n_trials',q('cfgTrials').value);
+  fd.append('handle_outliers',q('cfgOut').checked);
+  try{
+    const r=await fetch('/experiments/train',{method:'POST',headers:{Authorization:'Bearer '+TOKEN},body:fd});
+    if(!r.ok){alert('Error: '+await r.text());q('launchBtn').disabled=false;q('launchBtn').textContent='🚀 Launch AutoML Pipeline';return;}
+    const d=await r.json();q('launchBtn').disabled=false;q('launchBtn').textContent='🚀 Launch AutoML Pipeline';
+    q('trainStatus').style.display='';
+    q('trainMsg').innerHTML=`Experiment <span class="mono text-accent">${d.experiment_id}</span> running…`;
+    const steps=['Deep EDA & quality scoring','Benchmarking preprocessing strategies','Training models (Optuna HPO)','Building ensembles','SHAP & LIME explainability','Generating AI insights','Saving to disk'];
+    let si=0;
+    q('trainSteps').innerHTML=steps.map((s,i)=>`<div class="ts" id="ts${i}"><div class="ts-dot"></div><span>${s}</span></div>`).join('');
+    startLogStream(d.experiment_id);clearInterval(POLL);
+    POLL=setInterval(async()=>{
+      if(si<steps.length){document.querySelectorAll('.ts').forEach((el,i)=>{if(i<si)el.className='ts done';else if(i===si)el.className='ts active';else el.className='ts';});si++;}
+      try{const ds=await(await fetch('/experiments/'+d.experiment_id+'/status',{headers:ah()})).json();
+        if(ds.status==='completed'){clearInterval(POLL);document.querySelectorAll('.ts').forEach(el=>el.className='ts done');
+          q('trainMsg').innerHTML=`<span class="text-green">✅ Done! <span class="mono">${d.experiment_id}</span></span>`;
+          fillAllSels();updateExpBadge();setTimeout(()=>{go('experiments');viewExp(d.experiment_id);},1200);}
+        if(ds.status==='failed'){clearInterval(POLL);q('trainMsg').innerHTML=`<span class="text-red">❌ Failed: ${esc(ds.error||'unknown')}</span>`;}}catch(e){}
+    },5000);
+  }catch(e){alert('Network error: '+e.message);q('launchBtn').disabled=false;q('launchBtn').textContent='🚀 Launch AutoML Pipeline';}
+}
+function startLogStream(eid){const el=q('trainConsole');if(!el)return;try{const es=new EventSource('/experiments/'+eid+'/logs/stream');es.onmessage=e=>{const raw=e.data;if(raw==='"__DONE__"'||raw==='__DONE__'){es.close();return;}let line;try{line=JSON.parse(raw);}catch{line=raw;}const div=document.createElement('div');div.className='cl'+(line.includes('❌')?' err':line.includes('✅')?' ok':'');div.textContent=line;el.appendChild(div);el.scrollTop=el.scrollHeight;};es.onerror=()=>es.close();}catch(e){}}
+
+// ── Experiments ───────────────────────────────────────────────────────────────
+async function loadExps(){
+  q('expResults').innerHTML='';
+  const list=await(await fetch('/experiments',{headers:ah()})).json();
+  const el=q('expListEl');
+  if(!list.length){el.innerHTML='<div class="empty"><div class="empty-icon">≡</div><h3>No experiments yet</h3></div>';return;}
+  el.innerHTML=list.slice().reverse().map(e=>`<div class="exp-card" onclick="viewExp('${e.experiment_id}')">
+    <div class="exp-icon">${e.status==='completed'?'✓':e.status==='training'?'⟳':'○'}</div>
+    <div class="exp-info"><div class="exp-name">${esc(e.dataset_name||e.experiment_id)}</div>
+    <div class="exp-meta">id:${e.experiment_id} · target:${e.target_col||'?'}${e.created_at?' · '+new Date(e.created_at*1000).toLocaleDateString():''}</div></div>
+    <div class="exp-actions">${!e.in_memory?'<span class="disk-tag">💾 disk</span>':''}
+    <span class="s-badge s-${e.status[0]}">${e.status}</span>
+    ${e.status==='completed'?`<button class="btn btn-danger btn-xs" onclick="event.stopPropagation();delExp('${e.experiment_id}')">✕</button>`:''}</div></div>`).join('');
+}
+async function viewExp(eid){
+  const el=q('expResults');el.innerHTML=spin();el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  const r=await fetch('/experiments/'+eid+'/results',{headers:ah()});
+  if(!r.ok){el.innerHTML='<div class="card"><p class="text-muted">Results not available.</p></div>';return;}
+  renderResults(eid,await r.json(),el);
+}
+function renderResults(eid,d,el){
+  const clf=d.problem_type==='classification',pm=clf?'accuracy':'r2';
+  const bm=d.best_metrics||{},lb=d.leaderboard||[],fi=(d.top_features||[]).slice(0,10),ins=d.ai_insights||[];
+  el.innerHTML=`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:14px">
+      <div><div style="font-size:14px;font-weight:700">${esc(d.dataset_name||eid)}</div>
+        <div class="text-muted text-sm" style="margin-top:2px">id: <span class="mono text-accent">${eid}</span> · target: <b>${esc(d.target_col||'—')}</b></div></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-secondary btn-sm" onclick="go('eda');q('edaSel').value='${eid}';loadEDA()">📊 EDA</button>
+        <button class="btn btn-secondary btn-sm" onclick="go('doctor');q('doctorSel').value='${eid}';loadDoctor()">🩺 Doctor</button>
+        <a href="/experiments/${eid}/report" class="btn btn-primary btn-sm">⬇ Report</a>
+        <button class="btn btn-danger btn-sm" onclick="delExp('${eid}')">✕</button>
+      </div>
+    </div>
+    <div class="g2" style="margin-bottom:14px">
+      <div><div class="card-title">Best Model</div>
+        <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:8px">${esc(d.best_model||'—')}</div>
+        <div class="row2" style="gap:6px">${Object.entries(bm).slice(0,4).map(([k,v])=>`<div style="background:var(--bg2);border-radius:var(--radius);padding:8px;text-align:center"><div class="mono" style="font-size:15px;color:${k===pm?'var(--green)':'var(--accent)'}">${typeof v==='number'?v.toFixed(4):v}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${k.replace(/_/g,' ')}</div></div>`).join('')}</div></div>
+      <div><div class="card-title">Top Features</div>
+        ${fi.map((f,i)=>`<div class="fbar-row"><div class="fbar-label">${i+1}. ${esc(f.feature)}</div><div class="fbar-track"><div class="fbar-fill" style="width:${(f.importance/(fi[0]?.importance||1)*100).toFixed(1)}%"></div></div><div class="fbar-val">${f.importance.toFixed(4)}</div></div>`).join('')||'<p class="text-muted text-sm">No data</p>'}
+      </div>
+    </div>
+    ${ins.length?'<div style="margin-bottom:12px">'+ins.map(i=>`<div class="insight-box">${esc(i)}</div>`).join('')+'</div>':''}
+    <div class="card-title">Model Leaderboard</div>
+    <div class="tbl"><table><thead><tr><th>#</th><th>Model</th>${Object.keys(lb[0]?.metrics||{}).map(k=>`<th>${k.replace(/_/g,' ')}</th>`).join('')}</tr></thead>
+    <tbody>${lb.map((r,i)=>`<tr class="${i===0?'best':''}"><td class="mono">${i+1}</td><td class="mono">${esc(r.model_name)}</td>${Object.values(r.metrics||{}).map(v=>`<td class="mono">${typeof v==='number'?v.toFixed(4):v}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+  </div>`;
+}
+async function delExp(eid){if(!confirm('Delete experiment '+eid+'?'))return;await fetch('/experiments/'+eid,{method:'DELETE',headers:ah()});loadExps();fillAllSels();updateExpBadge();}
+async function clearGhosts(){
+  if(!confirm('Clear all disk-only experiments (those not in memory)?'))return;
+  const r=await fetch('/experiments',{method:'DELETE',headers:ah()});
+  const d=await r.json();alert(`Cleared ${d.cleared} ghost experiments.`);
+  loadExps();fillAllSels();updateExpBadge();
+}
+
+// ── Compare ───────────────────────────────────────────────────────────────────
+async function loadCompareList(){
+  const list=(await(await fetch('/experiments',{headers:ah()})).json()).filter(e=>e.status==='completed');
+  q('compareList').innerHTML=list.map(e=>`<div class="cmp-card"><input type="checkbox" id="cc_${e.experiment_id}" value="${e.experiment_id}"/>
+    <div><div class="cmp-id">${e.experiment_id}</div><div class="cmp-meta">${esc(e.dataset_name||'')} · target:${e.target_col||'—'}</div></div></div>`).join('');
+}
+async function runCompare(){
+  const ids=[...document.querySelectorAll('.cmp-card input:checked')].map(c=>c.value);
+  if(ids.length<2){alert('Select at least 2 experiments.');return;}
+  q('compareResults').innerHTML=spin();
+  const r=await fetch('/api/compare',{method:'POST',headers:ah(),body:JSON.stringify({experiment_ids:ids})});
+  renderCompare(await r.json());
+}
+function renderCompare(rows){
+  if(!rows.length){q('compareResults').innerHTML='<div class="card"><p>No data</p></div>';return;}
+  const allM=[...new Set(rows.flatMap(r=>Object.keys(r.metrics||{})))];
+  const allFeats=[...new Set(rows.flatMap(r=>(r.top_features||[]).map(f=>f.feature)))];
+  q('compareResults').innerHTML=`
+    <div class="card"><div class="card-title">Metrics Comparison</div>
+      <div class="tbl"><table><thead><tr><th>Metric</th>${rows.map((r,i)=>`<th style="color:${PAL[i%6]}">${esc((r.dataset_name||r.experiment_id).slice(0,14))}</th>`).join('')}</tr></thead>
+        <tbody>${allM.map(m=>{const vals=rows.map(r=>r.metrics[m]);const mx=Math.max(...vals.filter(Number.isFinite));
+          return`<tr><td class="text-muted" style="font-size:10px;text-transform:uppercase">${m.replace(/_/g,' ')}</td>${vals.map((v,i)=>`<td class="mono" style="${Number.isFinite(v)&&v===mx?'color:var(--green);font-weight:700':''}">${Number.isFinite(v)?v.toFixed(4):'—'}</td>`).join('')}</tr>`;}).join('')}
+        </tbody></table></div>
+    </div>
+    <div class="g2" style="margin-top:12px">
+      <div class="card"><div class="card-title">Radar Profile</div>${cw(240,'radarCh')}</div>
+      <div class="card"><div class="card-title">Bar Comparison</div>${cw(200,'cmpBar')}</div>
+    </div>
+    <div class="card" style="margin-top:12px"><div class="card-title">Feature Overlap</div>
+      ${allFeats.slice(0,12).map(f=>{const n=rows.filter(r=>(r.top_features||[]).some(x=>x.feature===f)).length;return`<div class="fbar-row"><div class="fbar-label">${esc(f)}</div><div class="fbar-track"><div class="fbar-fill green" style="width:${n/rows.length*100}%"></div></div><div class="fbar-val">${n}/${rows.length}</div></div>`;}).join('')}
+    </div>`;
+  setTimeout(()=>{
+    const rCtx=q('radarCh');if(rCtx&&allM.length>=2){if(CH.radar)CH.radar.destroy();CH.radar=new Chart(rCtx,{type:'radar',data:{labels:allM.map(m=>m.replace(/_/g,' ').toUpperCase()),datasets:rows.map((r,i)=>({label:r.dataset_name||r.experiment_id,data:allM.map(m=>{const cv=Math.max(...rows.map(r2=>r2.metrics[m]||0));return cv>0?(r.metrics[m]||0)/cv*100:0;}),backgroundColor:PAL[i%6]+'22',borderColor:PAL[i%6],borderWidth:2,pointRadius:3}))},options:{responsive:true,maintainAspectRatio:false,scales:{r:{grid:{color:'#f3f4f6'},pointLabels:{color:'#9ca3af',font:{size:9}},ticks:{display:false}}},plugins:{legend:{labels:{color:'#6b7280',font:{size:10}}}}}});}
+    const bCtx=q('cmpBar');if(bCtx&&allM.length){if(CH.cmpBar)CH.cmpBar.destroy();const m=allM[0];CH.cmpBar=new Chart(bCtx,{type:'bar',data:{labels:rows.map(r=>(r.dataset_name||r.experiment_id).slice(0,12)),datasets:[{label:m,data:rows.map(r=>r.metrics[m]||0),backgroundColor:PAL.slice(0,rows.length).map(c=>c+'cc'),borderRadius:4,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#f3f4f6'},ticks:{color:'#9ca3af',font:{size:9}}},y:{grid:{display:false},ticks:{color:'#6b7280',font:{size:10}}}}}});}
+  },150);
+}
+
+// ── EDA ───────────────────────────────────────────────────────────────────────
+async function fillEdaSel(){fillSel('edaSel',await getExps(),l=>l.filter(e=>e.status==='completed'&&e.in_memory));}
+async function loadEDA(){
+  const eid=q('edaSel').value;if(!eid)return;const el=q('edaOut');el.innerHTML=spin();
+  try{
+    const [r1,r2,r3]=await Promise.all([
+      fetch('/experiments/'+eid+'/eda/advanced',{headers:ah()}),
+      fetch('/experiments/'+eid+'/eda/histograms',{headers:ah()}),
+      fetch('/experiments/'+eid+'/results',{headers:ah()})
+    ]);
+    if(!r1.ok){el.innerHTML='<div class="card"><p class="text-muted">EDA not available — model must be in memory.</p></div>';return;}
+    renderEDA(await r1.json(),r2.ok?await r2.json():{},r3.ok?await r3.json():{},el,eid);
+  }catch(e){el.innerHTML=`<div class="card"><p class="text-red">${esc(e.message)}</p></div>`;}
+}
+function renderEDA(eda,histData,results,el,eid){
+  const ns=eda.numeric_stats||{},miss=eda.missing||{},out=eda.outliers||{},sk=eda.skewness||{};
+  const topCorr=Object.entries(eda.correlations||{}).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,12);
+  const numCols=eda.num_cols||[];const tgtDist=eda.target_dist||{};const biv=eda.bivariate||{};
+  const hists=histData.histograms||{};const histCols=Object.keys(hists);
+  const missCols=Object.entries(miss).filter(([c,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const skData=Object.entries(sk).slice(0,15).map(([c,v])=>({c,val:v}));
+  const matCols=(Object.keys(eda.correlation_matrix||{})).slice(0,20);
+  const mat=eda.correlation_matrix||{};
+  const targetCol=histData.target||results.target_col||'';
+  const isClf=results.problem_type==='classification'||tgtDist.type==='categorical';
+
+  el.innerHTML=`
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card"><div class="card-title">Dataset Overview</div>
+      <div class="row3" style="gap:8px">${[['Rows',eda.shape?.[0]||'—'],['Columns',eda.shape?.[1]||'—'],['Numeric',numCols.length],['Missing cols',missCols.length],['Target',esc(targetCol)],['Task',results.problem_type||'—']].map(([k,v])=>`<div style="background:var(--bg2);border-radius:var(--radius);padding:8px"><div class="mono" style="font-size:14px;font-weight:700;color:var(--accent)">${v}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${k}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="card"><div class="card-title">Missing Values</div>
+      ${missCols.length?missCols.slice(0,10).map(([c,v])=>`<div class="fbar-row"><div class="fbar-label">${esc(c)}</div><div class="fbar-track"><div class="fbar-fill red" style="width:${Math.min(100,v/eda.shape[0]*100)}%"></div></div><div class="fbar-val">${(v/eda.shape[0]*100).toFixed(1)}%</div></div>`).join(''):'<p class="text-green text-sm">✓ No missing values</p>'}
+    </div>
+  </div>
+
+  ${numCols.length?`<div class="card" style="margin-bottom:14px"><div class="card-title">Numeric Statistics</div>
+    <div class="tbl"><table><thead><tr><th>Column</th><th>Mean</th><th>Std</th><th>Min</th><th>25%</th><th>Median</th><th>75%</th><th>Max</th><th>Skew</th></tr></thead>
+    <tbody>${numCols.slice(0,20).map(c=>{const s=ns[c]||{},skv=sk[c];const sc=typeof skv==='number'?Math.abs(skv)>1?'var(--red)':Math.abs(skv)>0.5?'var(--yellow)':'var(--green)':'var(--muted)';
+      return`<tr><td class="mono">${esc(c)}</td><td class="mono">${s.mean!=null?s.mean.toFixed(3):'—'}</td><td class="mono">${s.std!=null?s.std.toFixed(3):'—'}</td><td class="mono">${s.min!=null?s.min.toFixed(3):'—'}</td><td class="mono">${s['25%']!=null?s['25%'].toFixed(3):'—'}</td><td class="mono">${s['50%']!=null?s['50%'].toFixed(3):'—'}</td><td class="mono">${s['75%']!=null?s['75%'].toFixed(3):'—'}</td><td class="mono">${s.max!=null?s.max.toFixed(3):'—'}</td><td class="mono" style="color:${sc}">${typeof skv==='number'?skv.toFixed(2):'—'}</td></tr>`;}).join('')}
+    </tbody></table></div></div>`:''}
+
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card"><div class="card-title">Target Distribution — ${esc(targetCol)}</div>${cw(220,'edaTgt')}</div>
+    <div class="card"><div class="card-title">Skewness by Feature</div>${cw(220,'edaSkew')}</div>
+  </div>
+
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card"><div class="card-title">Top Feature Correlations (Pearson)</div>
+      ${topCorr.length?topCorr.map(([k,v])=>{const abs=Math.abs(v||0),cc=abs>0.7?'var(--red)':abs>0.4?'var(--yellow)':'var(--green)';return`<div class="fbar-row"><div class="fbar-label" style="width:150px;font-size:10px">${esc(k.replace('_vs_',' × '))}</div><div class="fbar-track"><div class="fbar-fill" style="width:${abs*100}%;background:${cc}"></div></div><div class="fbar-val" style="color:${cc}">${v.toFixed(3)}</div></div>`;}).join(''):'<p class="text-muted text-sm">No correlation data</p>'}
+    </div>
+    <div class="card"><div class="card-title">Outlier Counts (IQR)</div>
+      ${Object.keys(out).length?Object.entries(out).slice(0,10).map(([c,v])=>`<div class="fbar-row"><div class="fbar-label">${esc(c)}</div><div class="fbar-track"><div class="fbar-fill" style="width:${Math.min(100,(v||0)/Math.max(...Object.values(out))*100)}%;background:var(--yellow)"></div></div><div class="fbar-val">${v}</div></div>`).join(''):'<p class="text-muted text-sm">No outlier data</p>'}
+    </div>
+  </div>
+
+  ${matCols.length>=3?`<div class="card" style="margin-bottom:14px"><div class="card-title">Full Correlation Matrix — values shown in cells</div><div id="edaFullHM" style="overflow-x:auto"></div></div>`:''}
+
+  ${histCols.length?`<div class="card" style="margin-bottom:14px"><div class="card-title">Feature Histograms</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      ${histCols.slice(0,8).map(c=>`<div><div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c)}</div>${cw(80,'hist_'+CSS.escape(c))}</div>`).join('')}
+    </div></div>`:''}
+
+  ${Object.keys(biv).length?`<div class="card" style="margin-bottom:14px"><div class="card-title">Bivariate Analysis — Feature vs Target</div>
+    <div style="display:grid;grid-template-columns:repeat(${Math.min(Object.keys(biv).length,3)},1fr);gap:12px">
+      ${Object.keys(biv).slice(0,3).map(c=>`<div><div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-align:center">${esc(c)} vs ${esc(targetCol)}</div>${cw(180,'biv_'+CSS.escape(c))}</div>`).join('')}
+    </div></div>`:''}
+
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <a href="/experiments/${eid}/report" class="btn btn-primary">⬇ Download Report</a>
+    <a href="/experiments/${eid}/model-card" target="_blank" class="btn btn-secondary">📋 Model Card JSON</a>
+  </div>`;
+
+  // Render charts
+  setTimeout(()=>{
+    // Target distribution
+    const tCtx=q('edaTgt');
+    if(tCtx){if(CH.tgt)CH.tgt.destroy();
+      if(isClf&&tgtDist.counts){const vc=tgtDist.counts;CH.tgt=new Chart(tCtx,{type:'doughnut',data:{labels:Object.keys(vc).slice(0,8),datasets:[{data:Object.values(vc).slice(0,8),backgroundColor:PAL,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#6b7280',font:{size:10},boxWidth:12}}}}});}
+      else if(tgtDist.counts&&tgtDist.edges){CH.tgt=new Chart(tCtx,{type:'bar',data:{labels:tgtDist.edges.map(b=>b.toFixed(1)),datasets:[{data:tgtDist.counts,backgroundColor:'#2563ebcc',borderRadius:2,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f3f4f6'},ticks:{color:'#9ca3af',font:{size:9}}},x:{grid:{display:false},ticks:{color:'#9ca3af',font:{size:8},maxTicksLimit:8}}}}});}
+      else tCtx.parentElement.innerHTML='<p class="text-muted text-sm" style="padding:20px">Target distribution unavailable</p>';
+    }
+    // Skewness
+    const skCtx=q('edaSkew');if(skCtx&&skData.length){if(CH.skew)CH.skew.destroy();CH.skew=new Chart(skCtx,{type:'bar',data:{labels:skData.map(x=>x.c),datasets:[{data:skData.map(x=>x.val),backgroundColor:skData.map(x=>Math.abs(x.val)>1?'#dc2626cc':Math.abs(x.val)>0.5?'#d97706cc':'#16a34acc'),borderRadius:3,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f3f4f6'},ticks:{color:'#9ca3af',font:{size:9}}},x:{grid:{display:false},ticks:{color:'#9ca3af',font:{size:8},maxRotation:45,maxTicksLimit:12}}}}});}
+    // Full heatmap
+    const hmEl=q('edaFullHM');
+    if(hmEl&&matCols.length>=3){
+      const sz=Math.min(40,Math.floor(560/matCols.length));
+      let html=`<table style="border-collapse:separate;border-spacing:2px"><thead><tr><th style="width:80px;font-size:0"></th>`;
+      matCols.forEach(c=>{html+=`<th style="font-size:9px;color:var(--muted);text-align:center;width:${sz}px;max-width:${sz}px;overflow:hidden;white-space:nowrap" title="${c}">${esc(c.slice(0,5))}</th>`;});
+      html+='</tr></thead><tbody>';
+      matCols.forEach(row=>{
+        html+=`<tr><td style="font-size:9px;color:var(--muted);text-align:right;padding-right:4px;max-width:80px;overflow:hidden;white-space:nowrap" title="${row}">${esc(row.slice(0,10))}</td>`;
+        matCols.forEach(col=>{
+          const v=(mat[row]||{})[col],val=typeof v==='number'?v:0,abs=Math.abs(val);
+          const isPos=val>0;const r=isPos?Math.round(16+abs*60):Math.round(220-abs*40);const g=isPos?Math.round(163-abs*80):Math.round(38);const b=isPos?Math.round(74-abs*40):Math.round(38);
+          const bg=`rgba(${r},${g},${b},${0.1+abs*0.75})`;const tc=abs>0.5?'#fff':val>0?'var(--green)':'var(--muted)';
+          html+=`<td title="${esc(row)}×${esc(col)}: ${typeof v==='number'?v.toFixed(3):'—'}"><div style="width:${sz}px;height:${sz}px;background:${bg};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:${sz>30?'8':'7'}px;font-family:var(--mono);color:${tc};font-weight:600">${typeof v==='number'?v.toFixed(2):'—'}</div></td>`;
+        });
+        html+='</tr>';
+      });
+      html+='</tbody></table>';hmEl.innerHTML=html;
+    }
+    // Mini histograms
+    histCols.slice(0,8).forEach(c=>{const ctx=q('hist_'+CSS.escape(c));if(!ctx)return;const h=hists[c];if(!h?.bins)return;if(CH['h_'+c])CH['h_'+c].destroy();CH['h_'+c]=new Chart(ctx,{type:'bar',data:{labels:h.bins.map(b=>parseFloat(b.toFixed(1))),datasets:[{data:h.counts,backgroundColor:'#2563eb99',borderRadius:1,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{display:false},x:{ticks:{color:'#9ca3af',font:{size:7},maxTicksLimit:4},grid:{display:false}}}}});});
+    // Bivariate
+    Object.keys(biv).slice(0,3).forEach(c=>{const ctx=q('biv_'+CSS.escape(c));if(!ctx)return;const b=biv[c];if(!b)return;if(CH['biv_'+c])CH['biv_'+c].destroy();if(isClf){const classes=Object.keys(b);CH['biv_'+c]=new Chart(ctx,{type:'scatter',data:{datasets:classes.map((cls,ci)=>({label:String(cls),data:(b[cls]?.x||[]).slice(0,80).map((v,i)=>({x:v,y:ci+Math.random()*.2-.1})),backgroundColor:PAL[ci%6]+'99',pointRadius:2.5}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#6b7280',font:{size:9}},display:classes.length<=6}},scales:{x:{grid:{color:'#f3f4f6'},ticks:{color:'#9ca3af',font:{size:8}}},y:{display:false}}}});}else{CH['biv_'+c]=new Chart(ctx,{type:'scatter',data:{datasets:[{data:(b.x||[]).slice(0,200).map((v,i)=>({x:v,y:(b.y||[])[i]||0})),backgroundColor:'#2563eb66',pointRadius:2.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#f3f4f6'},ticks:{color:'#9ca3af',font:{size:8}}},y:{grid:{color:'#f3f4f6'},ticks:{color:'#9ca3af',font:{size:8}}}}}});}});
+  },180);
+}
+
+// ── Sensitivity ───────────────────────────────────────────────────────────────
+async function fillSensSel(){fillSel('sensSel',await getExps(),l=>l.filter(e=>e.status==='completed'&&e.in_memory));}
+async function loadSensSchema(){
+  const eid=q('sensSel').value;if(!eid){q('sensForm').innerHTML='';return;}
+  const r=await fetch('/experiments/'+eid+'/schema',{headers:ah()});
+  if(!r.ok){q('sensForm').innerHTML='<div class="card"><p class="text-muted">Schema unavailable.</p></div>';return;}
+  SENS_SCHEMA=await r.json();
+  const numFeats=SENS_SCHEMA.features.filter(f=>f.type==='numeric').slice(0,12);
+  const catFeats=SENS_SCHEMA.features.filter(f=>f.type==='categorical').slice(0,6);
+  q('sensForm').innerHTML=`<div class="card" style="margin-bottom:14px"><div class="card-title">Starting Values</div>
+    <p class="text-muted text-sm" style="margin-bottom:12px">Set baseline. Analysis varies each feature ±2σ while holding others fixed.</p>
+    ${numFeats.length?`<div class="row3">${numFeats.map(f=>`<div class="field"><label class="mono">${esc(f.name)}</label><input class="inp" id="sens_${sid(f.name)}" type="number" step="any" value="${f.median??f.mean??0}"/></div>`).join('')}</div>`:''}
+    ${catFeats.length?`<div class="row3">${catFeats.map(f=>`<div class="field"><label class="mono">${esc(f.name)}</label><select class="sel" id="sens_${sid(f.name)}">${(f.categories||[]).map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>`).join('')}</div>`:''}
+  </div>`;
+}
+async function runSensitivity(){
+  const eid=q('sensSel').value;if(!eid||!SENS_SCHEMA){alert('Select an in-memory experiment first.');return;}
+  const row={};
+  SENS_SCHEMA.features.forEach(f=>{const el=q('sens_'+sid(f.name));if(el)row[f.name]=f.type==='numeric'?(parseFloat(el.value)||0):el.value;else row[f.name]=f.type==='numeric'?(f.median??f.mean??0):(f.categories?.[0]||'');});
+  const el=q('sensOut');el.innerHTML=spin();
+  try{
+    const r=await fetch('/experiments/'+eid+'/sensitivity',{method:'POST',headers:ah(),body:JSON.stringify({data:[row]})});
+    if(!r.ok){el.innerHTML=`<div class="card"><p class="text-red">Error: ${await r.text()}</p></div>`;return;}
+    renderSensitivity(await r.json(),el);
+  }catch(e){el.innerHTML=`<div class="card"><p class="text-red">${esc(e.message)}</p></div>`;}
+}
+function renderSensitivity(res,el){
+  const s=res.sensitivity||[],base=res.base_prediction,metricLabel=res.metric_label||'score';
+  if(!s.length){el.innerHTML='<div class="card"><p class="text-muted">No numeric features with measurable impact found.</p></div>';return;}
+
+  // Filter to features with actual impact > 0
+  const active=s.filter(f=>f.impact>0);
+  const display=active.length?active:s; // fallback if all zero
+  const maxImp=Math.max(...display.map(f=>f.impact),0.0001);
+
+  el.innerHTML=`<div class="g2">
+    <div class="card">
+      <div class="card-title">Tornado Chart — Feature Impact on ${metricLabel}</div>
+      <p class="text-muted text-sm" style="margin-bottom:14px">
+        Base prediction: <b>${esc(String(base))}</b> · ${metricLabel}: <b>${typeof res.base_prediction_num==='number'?res.base_prediction_num.toFixed(4):'—'}</b>
+      </p>
+      ${display.slice(0,15).map(f=>{
+        const bn=res.base_prediction_num||0;
+        const lD=f.low_pred-bn, hD=f.high_pred-bn;
+        const lW=Math.min(Math.abs(lD)/maxImp*45,45);
+        const hW=Math.min(Math.abs(hD)/maxImp*45,45);
+        const lColor=lD<0?'#dc2626':'#16a34a';
+        const hColor=hD>0?'#16a34a':'#dc2626';
+        return`<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
+            <span class="mono" style="font-weight:600;color:var(--text)">${esc(f.feature)}</span>
+            <span style="color:${f.impact>0?'var(--accent)':'var(--muted2)'}">impact Δ${f.impact.toFixed(4)}</span>
+          </div>
+          <div style="display:flex;height:18px;background:#f3f4f6;border-radius:4px;overflow:hidden;position:relative">
+            <div style="width:50%;display:flex;justify-content:flex-end;align-items:center">
+              <div style="width:${lW}%;min-width:${lW>0?'2px':'0'};height:100%;background:${lColor};opacity:.8;border-radius:2px 0 0 2px" title="low: ${f.low_val.toFixed(3)} → ${metricLabel} ${f.low_pred.toFixed(4)}"></div>
+            </div>
+            <div style="width:2px;background:#d1d5db;flex-shrink:0"></div>
+            <div style="width:50%;display:flex;justify-content:flex-start;align-items:center">
+              <div style="width:${hW}%;min-width:${hW>0?'2px':'0'};height:100%;background:${hColor};opacity:.8;border-radius:0 2px 2px 0" title="high: ${f.high_val.toFixed(3)} → ${metricLabel} ${f.high_pred.toFixed(4)}"></div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:#9ca3af;margin-top:2px;font-family:var(--mono)">
+            <span>↓ val=${f.low_val.toFixed(2)} → ${metricLabel}=${f.low_pred.toFixed(3)}</span>
+            <span>↑ val=${f.high_val.toFixed(2)} → ${metricLabel}=${f.high_pred.toFixed(3)}</span>
+          </div>
+        </div>`;
+      }).join('')}
+      <div style="display:flex;gap:14px;margin-top:14px;padding-top:10px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;background:#dc2626;border-radius:2px;display:inline-block;opacity:.8"></span>Decreases ${metricLabel}</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;background:#16a34a;border-radius:2px;display:inline-block;opacity:.8"></span>Increases ${metricLabel}</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Impact Ranking — Top ${Math.min(display.length,12)} Features</div>
+      <div id="sensBarWrap" style="position:relative;width:100%;height:320px">
+        <canvas id="sensBar"></canvas>
+      </div>
+    </div>
+  </div>`;
+
+  // Use requestAnimationFrame so DOM is painted before Chart.js measures canvas
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const ctx=q('sensBar');
+      if(!ctx)return;
+      if(CH.sensBar){CH.sensBar.destroy();CH.sensBar=null;}
+      const top=display.slice(0,12);
+      const colors=top.map(f=>f.direction==='positive'?'rgba(22,163,74,.75)':'rgba(220,38,38,.75)');
+      CH.sensBar=new Chart(ctx,{
+        type:'bar',
+        data:{
+          labels:top.map(f=>f.feature.length>18?f.feature.slice(0,16)+'…':f.feature),
+          datasets:[{
+            label:'Impact',
+            data:top.map(f=>f.impact),
+            backgroundColor:colors,
+            borderRadius:4,
+            borderWidth:0
+          }]
+        },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          indexAxis:'y',
+          plugins:{
+            legend:{display:false},
+            tooltip:{callbacks:{label:ctx=>`Δ ${ctx.parsed.x.toFixed(6)}`}}
+          },
+          scales:{
+            x:{
+              grid:{color:'#f3f4f6'},
+              ticks:{color:'#9ca3af',font:{size:9}},
+              title:{display:true,text:`Change in ${metricLabel}`,color:'#9ca3af',font:{size:9}}
+            },
+            y:{grid:{display:false},ticks:{color:'#374151',font:{size:10}}}
+          }
+        }
+      });
+    });
+  });
+}
+
+// ── Model Doctor ──────────────────────────────────────────────────────────────
+async function fillDoctorSel(){fillSel('doctorSel',await getExps(),l=>l.filter(e=>e.status==='completed'&&e.in_memory));}
+async function loadDoctor(){
+  const eid=q('doctorSel').value;if(!eid)return;const el=q('doctorOut');el.innerHTML=spin();
+  const r=await fetch('/experiments/'+eid+'/doctor',{headers:ah()});
+  if(!r.ok){el.innerHTML=`<div class="card"><p class="text-muted">Doctor unavailable: ${await r.text()}</p></div>`;return;}
+  renderDoctor(await r.json(),el);
+}
+function renderDoctor(data,el){
+  const overall=data.overall_health,score=data.health_score||0;
+  const scoreColor=overall==='healthy'?'var(--green)':overall==='critical'?'var(--red)':'var(--yellow)';
+  const circ=2*Math.PI*36;
+  el.innerHTML=`
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card"><div class="card-title">Health Score</div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <svg width="88" height="88"><circle cx="44" cy="44" r="36" fill="none" stroke="var(--bg3)" stroke-width="8"/>
+            <circle cx="44" cy="44" r="36" fill="none" stroke="${scoreColor}" stroke-width="8"
+              stroke-dasharray="${circ}" stroke-dashoffset="${circ*(1-score/100)}" stroke-linecap="round" transform="rotate(-90 44 44)"/>
+            <text x="44" y="49" text-anchor="middle" font-size="15" font-weight="700" fill="${scoreColor}" font-family="var(--mono)">${score}</text>
+          </svg>
+          <div>
+            <div style="font-size:16px;font-weight:700;color:${scoreColor};text-transform:capitalize">${esc(overall)}</div>
+            <div class="text-muted text-sm" style="margin-top:4px">${data.n_findings} finding${data.n_findings!==1?'s':''} found</div>
+            <div class="text-muted text-sm">Generated ${esc(data.generated_at)}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">What is Model Doctor?</div>
+        <p style="font-size:12px;color:var(--muted);line-height:1.7">Model Doctor automatically inspects your trained model for common ML issues like data leakage, class imbalance, feature dominance, and small datasets. Each finding comes with a <b>prescription</b> — a specific, actionable fix.</p>
+      </div>
+    </div>
+    <div>${data.diagnoses.map(d=>`<div class="diag-card ${d.severity}">
+      <div class="diag-category">${esc(d.category)} · ${d.severity.toUpperCase()}</div>
+      <div class="diag-finding">${esc(d.finding)}</div>
+      <div class="diag-rx">💊 <b>Prescription:</b> ${esc(d.prescription)}</div>
+    </div>`).join('')}</div>`;
+}
+
+// ── Data Profile ──────────────────────────────────────────────────────────────
+async function fillProfileSel(){fillSel('profileSel',await getExps(),l=>l.filter(e=>e.status==='completed'&&e.in_memory));}
+async function loadProfile(){
+  const eid=q('profileSel').value;if(!eid)return;const el=q('profileOut');el.innerHTML=spin();
+  const r=await fetch('/experiments/'+eid+'/profile',{headers:ah()});
+  if(!r.ok){el.innerHTML=`<div class="card"><p class="text-muted">Profile unavailable: ${await r.text()}</p></div>`;return;}
+  renderProfile(await r.json(),el);
+}
+function renderProfile(data,el){
+  const qc=data.quality_score,qcolor=qc>=80?'var(--green)':qc>=60?'var(--yellow)':'var(--red)';
+  el.innerHTML=`
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card"><div class="card-title">Data Quality Report — ${esc(data.dataset_name)}</div>
+        <div class="row3" style="gap:8px;margin-bottom:14px">
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:10px;text-align:center"><div class="mono" style="font-size:20px;font-weight:700;color:${qcolor}">${qc.toFixed(0)}</div><div class="text-muted text-sm">Quality Score</div></div>
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:10px;text-align:center"><div class="mono" style="font-size:20px;font-weight:700">${data.completeness_pct.toFixed(1)}%</div><div class="text-muted text-sm">Completeness</div></div>
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:10px;text-align:center"><div class="mono" style="font-size:20px;font-weight:700">${data.uniqueness_pct.toFixed(1)}%</div><div class="text-muted text-sm">Uniqueness</div></div>
+        </div>
+        <div class="row2" style="gap:6px">
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:8px"><div class="mono" style="font-size:14px;font-weight:700">${data.shape.rows.toLocaleString()}</div><div class="text-muted text-sm">Rows</div></div>
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:8px"><div class="mono" style="font-size:14px;font-weight:700">${data.shape.columns}</div><div class="text-muted text-sm">Columns</div></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">What does this mean?</div>
+        <p style="font-size:12px;color:var(--muted);line-height:1.7">Quality Score = weighted average of <b>completeness</b> (no missing values) and <b>uniqueness</b> (no duplicate rows). Higher is better. A score above 80 indicates the dataset is ready for ML modeling without major preprocessing concerns.</p>
+        <div style="margin-top:12px;padding:10px;background:${qc>=80?'var(--green-light)':qc>=60?'var(--yellow-light)':'var(--red-light)'};border-radius:var(--radius)">
+          <b style="color:${qcolor}">${qc>=80?'✅ Ready for ML':'⚠️ Needs attention before ML'}</b>
+        </div>
+      </div>
+    </div>
+    <div class="card"><div class="card-title">Column-by-Column Profile</div>
+      ${data.columns.map(col=>`<div class="col-card ${col.is_target?'active':''}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="col-name">${esc(col.name)}</div>
+          ${col.is_target?'<span class="badge badge-blue">TARGET</span>':''}
+          <span class="badge badge-gray">${esc(col.role||col.dtype)}</span>
+          ${col.missing_pct>0?`<span class="badge badge-red">${col.missing_pct}% missing</span>`:'<span class="badge badge-green">complete</span>'}
+        </div>
+        <div class="col-stat">
+          ${col.role==='numeric'?`
+            <div class="col-stat-item"><div class="col-stat-val">${col.mean!=null?col.mean.toFixed(3):'—'}</div><div class="col-stat-lbl">mean</div></div>
+            <div class="col-stat-item"><div class="col-stat-val">${col.std!=null?col.std.toFixed(3):'—'}</div><div class="col-stat-lbl">std</div></div>
+            <div class="col-stat-item"><div class="col-stat-val">${col.min!=null?col.min.toFixed(2):'—'}</div><div class="col-stat-lbl">min</div></div>
+            <div class="col-stat-item"><div class="col-stat-val">${col.max!=null?col.max.toFixed(2):'—'}</div><div class="col-stat-lbl">max</div></div>
+            ${col.skew!=null?`<div class="col-stat-item"><div class="col-stat-val" style="color:${Math.abs(col.skew)>1?'var(--red)':Math.abs(col.skew)>0.5?'var(--yellow)':'var(--green)'}">${col.skew.toFixed(2)}</div><div class="col-stat-lbl">skew</div></div>`:''}
+          `:col.top_values?`<div class="col-stat-item"><div class="col-stat-lbl">Top values: ${col.top_values.slice(0,4).map(x=>`<b>${esc(x.value)}</b>(${x.count})`).join(', ')}</div></div>`:''}
+          <div class="col-stat-item"><div class="col-stat-val">${col.unique}</div><div class="col-stat-lbl">unique (${col.unique_pct}%)</div></div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+}
+
+// ── Counterfactual ────────────────────────────────────────────────────────────
+async function fillCFSel(){fillSel('cfSel',await getExps(),l=>l.filter(e=>e.status==='completed'&&e.in_memory));}
+async function loadCFSchema(){
+  const eid=q('cfSel').value;if(!eid){q('cfForm').innerHTML='';return;}
+  const r=await fetch('/experiments/'+eid+'/schema',{headers:ah()});
+  if(!r.ok)return;CF_SCHEMA=await r.json();
+  const numFeats=CF_SCHEMA.features.filter(f=>f.type==='numeric').slice(0,15);
+  const catFeats=CF_SCHEMA.features.filter(f=>f.type==='categorical').slice(0,6);
+  q('cfForm').innerHTML=`<div class="card"><div class="card-title">Input Row — the prediction you want to explain</div>
+    <p class="text-muted text-sm" style="margin-bottom:12px">Set the starting input. The system will find the smallest change to reach a different outcome.</p>
+    ${numFeats.length?`<div class="row3">${numFeats.map(f=>`<div class="field"><label class="mono">${esc(f.name)}</label><input class="inp" id="cf_${sid(f.name)}" type="number" step="any" value="${f.median??f.mean??0}"/></div>`).join('')}</div>`:''}
+    ${catFeats.length?`<div class="row3">${catFeats.map(f=>`<div class="field"><label class="mono">${esc(f.name)}</label><select class="sel" id="cf_${sid(f.name)}">${(f.categories||[]).map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>`).join('')}</div>`:''}
+  </div>`;
+}
+async function runCounterfactual(){
+  const eid=q('cfSel').value;if(!eid||!CF_SCHEMA){alert('Select an in-memory experiment.');return;}
+  const row={};
+  CF_SCHEMA.features.forEach(f=>{const el=q('cf_'+sid(f.name));if(el)row[f.name]=f.type==='numeric'?parseFloat(el.value)||0:el.value;else row[f.name]=f.type==='numeric'?(f.median??0):(f.categories?.[0]||'');});
+  const el=q('cfOut');el.innerHTML=spin();q('cfRunBtn').disabled=true;q('cfRunBtn').textContent='Searching…';
+  try{
+    const r=await fetch('/experiments/'+eid+'/counterfactual',{method:'POST',headers:ah(),body:JSON.stringify({data:[row]})});
+    q('cfRunBtn').disabled=false;q('cfRunBtn').textContent='🔀 Find Counterfactuals';
+    if(!r.ok){el.innerHTML=`<div class="card"><p class="text-red">Error: ${await r.text()}</p></div>`;return;}
+    renderCounterfactuals(await r.json(),el);
+  }catch(e){q('cfRunBtn').disabled=false;q('cfRunBtn').textContent='🔀 Find Counterfactuals';el.innerHTML=`<div class="card"><p class="text-red">${esc(e.message)}</p></div>`;}
+}
+function renderCounterfactuals(data,el){
+  const cfs=data.counterfactuals||[];
+  if(!cfs.length){el.innerHTML=`<div class="card"><div class="card-title">No counterfactuals found</div><p class="text-muted">The prediction is robust to single-feature changes. Try a different experiment or input.</p><p class="text-muted text-sm" style="margin-top:6px">Base: <span class="mono text-accent">${esc(String(data.base_prediction))}</span></p></div>`;return;}
+  el.innerHTML=`
+    <div style="background:var(--green-light);border:1px solid #bbf7d0;border-radius:var(--radius2);padding:14px;margin-bottom:16px;display:flex;gap:12px;align-items:center">
+      <div style="font-size:24px">🔀</div>
+      <div><div style="font-weight:700;font-size:14px">Found ${cfs.length} counterfactual${cfs.length>1?'s':''}</div>
+        <div class="text-muted text-sm">Base prediction: <span class="mono text-accent">${esc(String(data.base_prediction))}</span> → new prediction shown below</div></div>
+    </div>
+    ${cfs.map((cf,i)=>`<div class="cf-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:700;font-size:13px;color:var(--green)">Counterfactual #${i+1}</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="badge badge-gray">${cf.n_changes} change${cf.n_changes>1?'s':''}</span>
+          <span style="font-weight:700;color:var(--green);font-size:13px">→ ${esc(String(cf.new_prediction))}</span>
+        </div>
+      </div>
+      <div class="cf-row"><div class="cf-feat" style="font-weight:600">Feature</div><div class="cf-from" style="color:var(--muted);font-weight:600">Original</div><div class="cf-arrow" style="opacity:.3">→</div><div class="cf-to" style="font-weight:600">Changed To</div><div style="flex:1"></div></div>
+      <div class="cf-row"><div class="cf-feat">${esc(cf.feature)}</div>
+        <div class="cf-from">${cf.original!=null?cf.original.toFixed(4):'—'}</div>
+        <div class="cf-arrow">→</div>
+        <div class="cf-to">${cf.changed_to!=null?cf.changed_to.toFixed(4):'—'}</div>
+        <div style="font-size:10px;color:var(--muted);margin-left:auto">${cf.delta>0?'+':''}${cf.delta?.toFixed(3)??''}</div>
+      </div>
+    </div>`).join('')}
+    <div style="margin-top:10px;padding:10px;background:var(--bg2);border-radius:var(--radius);font-size:11px;color:var(--muted)">
+      💡 These represent the <b>minimum changes</b> found to alter the model's prediction. Use them to understand the decision boundary.
+    </div>`;
+}
+
+// ── Feature Interaction ───────────────────────────────────────────────────────
+async function fillIxSel(){fillSel('ixSel',await getExps(),l=>l.filter(e=>e.status==='completed'&&e.in_memory));}
+async function loadIxFeatures(){
+  const eid=q('ixSel').value;if(!eid)return;
+  const r=await fetch('/experiments/'+eid+'/schema',{headers:ah()});if(!r.ok)return;
+  const sc=await r.json();const nf=sc.features.filter(f=>f.type==='numeric');
+  const opts='<option>—</option>'+nf.map(f=>`<option value="${esc(f.name)}">${esc(f.name)}</option>`).join('');
+  q('ixFeatA').innerHTML=opts;q('ixFeatB').innerHTML=opts;
+  if(nf.length>=2){q('ixFeatA').value=nf[0].name;q('ixFeatB').value=nf[1].name;}
+}
+async function runInteraction(){
+  const eid=q('ixSel').value,fa=q('ixFeatA').value,fb=q('ixFeatB').value;
+  if(!eid||!fa||!fb||fa==='—'||fb==='—'){alert('Select experiment and two features.');return;}
+  if(fa===fb){alert('Select two different features.');return;}
+  const el=q('ixOut');el.innerHTML=spin();
+  try{
+    const r=await fetch('/experiments/'+eid+'/interaction',{method:'POST',headers:ah(),body:JSON.stringify({feature_a:fa,feature_b:fb})});
+    if(!r.ok){el.innerHTML=`<div class="card"><p class="text-red">Error: ${await r.text()}</p></div>`;return;}
+    renderInteraction(await r.json(),el,fa,fb);
+  }catch(e){el.innerHTML=`<div class="card"><p class="text-red">${esc(e.message)}</p></div>`;}
+}
+function renderInteraction(data,el,fa,fb){
+  const clf=data.problem_type==='classification',sc=data.scatter||{};
+  const xs=sc.x||[],ys=sc.y||[],ts=sc.target||[]; // ts is already numeric class index or float
+  const corrColor=Math.abs(data.correlation||0)>0.7?'#dc2626':Math.abs(data.correlation||0)>0.4?'#d97706':'#16a34a';
+  el.innerHTML=`<div class="card">
+    <div class="card-title">Feature Interaction: ${esc(fa)} vs ${esc(fb)}</div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="font-size:12px">Pearson r = <span style="font-weight:700;color:${corrColor};font-family:var(--mono)">${(data.correlation||0).toFixed(4)}</span></div>
+      <div style="font-size:12px;color:var(--muted)">${data.n_points||xs.length} data points · colored by target</div>
+      ${clf&&data.classes?`<div style="display:flex;gap:8px;flex-wrap:wrap">${data.classes.slice(0,6).map((c,i)=>`<span style="font-size:10px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:${PAL[i%6]};display:inline-block"></span>${esc(String(c))}</span>`).join('')}</div>`:''}
+    </div>
+    <div id="ixScatterWrap" style="position:relative;width:100%;height:340px"><canvas id="ixScatter"></canvas></div>
+  </div>`;
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const ctx=q('ixScatter');
+      if(!ctx){return;}
+      if(CH.ixScatter){CH.ixScatter.destroy();CH.ixScatter=null;}
+      let datasets;
+      if(clf&&data.classes&&data.classes.length>0){
+        // ts contains numeric class index (0,1,2...) from backend
+        datasets=data.classes.map((cls,ci)=>({
+          label:String(cls),
+          data:xs.map((x,i)=>ts[i]===ci?{x,y:ys[i]}:null).filter(Boolean),
+          backgroundColor:PAL[ci%6]+'bb',
+          pointRadius:3.5,
+          pointHoverRadius:5,
+        }));
+      } else {
+        // Regression: color by target value (blue→green gradient)
+        const validTs=ts.filter(v=>v!=null&&Number.isFinite(v));
+        const minT=validTs.length?Math.min(...validTs):0;
+        const maxT=validTs.length?Math.max(...validTs):1;
+        const rT=maxT-minT||1;
+        const bgColors=ts.map(t=>{
+          if(t==null||!Number.isFinite(t))return'#2563eb55';
+          const pct=(t-minT)/rT;
+          const r=Math.round(37+pct*190);
+          const g=Math.round(99+pct*60);
+          const b=Math.round(235-pct*190);
+          return`rgba(${r},${g},${b},.65)`;
+        });
+        datasets=[{
+          label:fa+' vs '+fb,
+          data:xs.map((x,i)=>({x,y:ys[i]})),
+          backgroundColor:bgColors,
+          pointRadius:3,
+          pointHoverRadius:5,
+        }];
+      }
+      CH.ixScatter=new Chart(ctx,{
+        type:'scatter',
+        data:{datasets},
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{
+            legend:{display:clf&&data.classes?.length>1,labels:{color:'#6b7280',font:{size:10},boxWidth:10}},
+            tooltip:{callbacks:{label:ctx=>`(${ctx.parsed.x.toFixed(3)}, ${ctx.parsed.y.toFixed(3)})`}}
+          },
+          scales:{
+            x:{title:{display:true,text:fa,color:'#6b7280',font:{size:11}},grid:{color:'#f3f4f6'},ticks:{color:'#9ca3af',font:{size:9}}},
+            y:{title:{display:true,text:fb,color:'#6b7280',font:{size:11}},grid:{color:'#f3f4f6'},ticks:{color:'#9ca3af',font:{size:9}}}
+          }
+        }
+      });
+    });
+  });
+}
+
+// ── AutoNarrative ─────────────────────────────────────────────────────────────
+async function fillNarrSel(){fillSel('narrSel',await getExps(),l=>l.filter(e=>e.status==='completed'),true);}
+async function loadNarrative(){
+  const eid=q('narrSel').value;if(!eid)return;const el=q('narrOut');el.innerHTML=spin();
+  const r=await fetch('/experiments/'+eid+'/narrative',{headers:ah()});
+  if(!r.ok){el.innerHTML='<div class="card"><p class="text-muted">Narrative not available yet.</p></div>';return;}
+  const data=await r.json();
+  el.innerHTML=`<div style="background:var(--accent-light);border:1px solid #bfdbfe;border-radius:var(--radius2);padding:14px;display:flex;gap:12px;align-items:center;margin-bottom:16px">
+    <div style="font-size:24px">📖</div>
+    <div><div style="font-size:14px;font-weight:700">${esc(data.dataset_name||eid)} — AutoNarrative</div>
+      <div class="text-muted text-sm">Generated ${esc(data.generated_at||'')} · AI-written plain language story</div>
+    </div>
+  </div>
+  ${(data.sections||[]).map(s=>`<div class="narr-section"><div class="narr-title">${esc(s.title)}</div><div class="narr-text">${s.text||''}</div></div>`).join('')}
+  <div style="display:flex;gap:8px;margin-top:16px">
+    <a href="/experiments/${eid}/report" class="btn btn-primary">⬇ Download Report</a>
+    <a href="/experiments/${eid}/model-card" target="_blank" class="btn btn-secondary">📋 Model Card JSON</a>
+  </div>`;
+}
+
+// ── Predict ───────────────────────────────────────────────────────────────────
+async function fillPredSel(){fillSel('predSel',await getExps(),l=>l.filter(e=>e.status==='completed'),true);}
+async function loadSchema(){
+  const eid=q('predSel').value;if(!eid)return;hide('predMemWarn');hide('predFormCard');
+  const r=await fetch('/experiments/'+eid+'/schema',{headers:ah()});
+  if(!r.ok){show('predMemWarn');return;}
+  SCHEMA=await r.json();buildPredForm(SCHEMA);buildApiCode(eid,SCHEMA);
+}
+function buildPredForm(schema){
+  const feats=schema.features||[];if(!feats.length){hide('predFormCard');return;}
+  q('predForm').innerHTML='<div class="row2">'+feats.slice(0,30).map(f=>{
+    if(f.type==='numeric') return`<div class="field"><label class="mono">${esc(f.name)}</label><div style="display:flex;gap:6px;align-items:center"><input class="inp" id="pf_${sid(f.name)}" type="number" step="any" value="${f.median??f.mean??0}" style="flex:1"/><input type="range" id="pfr_${sid(f.name)}" min="${f.min}" max="${f.max}" step="${((f.max-f.min)/100||0.01).toFixed(4)}" value="${f.median??f.mean??0}" style="width:80px;flex-shrink:0" oninput="syncSlider('${sid(f.name)}',this.value)"/></div></div>`;
+    return`<div class="field"><label class="mono">${esc(f.name)}</label><select class="sel" id="pf_${sid(f.name)}">${(f.categories||[]).map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>`;
+  }).join('')+'</div>';show('predFormCard');
+}
+function syncSlider(id,val){const inp=q('pf_'+id);if(inp)inp.value=parseFloat(val).toFixed(4);}
+function fillDefaults(){if(!SCHEMA)return;SCHEMA.features.forEach(f=>{const el=q('pf_'+sid(f.name));if(!el)return;if(f.type==='numeric'){el.value=f.median??f.mean??0;const sl=q('pfr_'+sid(f.name));if(sl)sl.value=el.value;}else if(f.categories?.length) el.value=f.categories[0];});}
+function fillRandom(){if(!SCHEMA)return;SCHEMA.features.forEach(f=>{const el=q('pf_'+sid(f.name));if(!el)return;if(f.type==='numeric'){const v=f.min+(f.max-f.min)*Math.random();el.value=v.toFixed(4);const sl=q('pfr_'+sid(f.name));if(sl)sl.value=v;}else if(f.categories?.length) el.value=f.categories[Math.floor(Math.random()*f.categories.length)];});}
+async function runPredict(){
+  const eid=q('predSel').value;if(!eid||!SCHEMA)return;
+  show('predLoadingCard');q('predResultCard').innerHTML='';q('predExplCard').innerHTML='';
+  const row={};SCHEMA.features.forEach(f=>{const el=q('pf_'+sid(f.name));if(el)row[f.name]=f.type==='numeric'?parseFloat(el.value)||0:el.value;else row[f.name]=f.type==='numeric'?(f.median??0):(f.categories?.[0]||'');});
+  try{
+    const r=await fetch('/experiments/'+eid+'/predict',{method:'POST',headers:ah(),body:JSON.stringify({data:[row]})});
+    hide('predLoadingCard');
+    if(!r.ok){q('predResultCard').innerHTML=`<div class="card"><p class="text-red">Error: ${await r.text()}</p></div>`;return;}
+    const res=await r.json();renderPredResult(res,eid);
+    fetch('/experiments/'+eid+'/explain',{method:'POST',headers:ah(),body:JSON.stringify({data:[row]})}).then(r=>r.ok?r.json():null).then(exp=>exp&&renderPredExpl(exp));
+  }catch(e){hide('predLoadingCard');q('predResultCard').innerHTML=`<div class="card"><p class="text-red">${esc(e.message)}</p></div>`;}
+}
+function renderPredResult(res,eid){
+  const pred=res.predictions?.[0],probs=res.probabilities?.[0],conf=probs?Math.max(...probs):null;
+  const isNum=typeof pred==='number';
+  q('predResultCard').innerHTML=`<div class="card">
+    <div class="card-title">Prediction Result</div>
+    <div class="pred-val">${esc(isNum?pred.toFixed(4):String(pred??'—'))}</div>
+    ${conf!=null?`<div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:12px">${(conf*100).toFixed(1)}% confidence · ${res.latency_ms}ms</div>`:`<div style="text-align:center;font-size:11px;color:var(--muted);margin-bottom:12px">${res.latency_ms}ms</div>`}
+    ${probs?`<div>${probs.map((p,i)=>`<div class="prob-row"><span>class ${i}</span><div class="prob-track"><div class="prob-fill" style="width:${(p*100).toFixed(1)}%"></div></div><span>${(p*100).toFixed(1)}%</span></div>`).join('')}</div>`:''}
+  </div>`;
+}
+function renderPredExpl(exp){
+  const feats=exp.features||[];if(!feats.length)return;
+  const maxW=Math.max(...feats.map(f=>Math.abs(f.weight||f.importance||0)),0.001);
+  q('predExplCard').innerHTML=`<div class="card"><div class="card-title">LIME Explanation</div>
+    ${feats.slice(0,12).map(f=>{const w=f.weight||f.importance||0,pct=Math.abs(w)/maxW*100,c=w>0?'var(--green)':'var(--red)';
+      return`<div class="fbar-row"><div class="fbar-label">${esc(f.feature||f.name)}</div><div class="fbar-track"><div class="fbar-fill" style="width:${pct.toFixed(1)}%;background:${c}"></div></div><div class="fbar-val" style="color:${c}">${w>0?'+':''}${w.toFixed(4)}</div></div>`;}).join('')}
+  </div>`;
+}
+async function runBatch(){
+  const eid=q('predSel').value,file=q('batchFile').files[0];
+  if(!eid){alert('Select an experiment.');return;}if(!file){alert('Select a CSV file.');return;}
+  q('batchBtn').disabled=true;q('batchBtn').textContent='Processing…';
+  const fd=new FormData();fd.append('file',file);
+  try{
+    const r=await fetch('/experiments/'+eid+'/predict/batch-file',{method:'POST',headers:{Authorization:'Bearer '+TOKEN},body:fd});
+    q('batchBtn').disabled=false;q('batchBtn').textContent='Upload & Predict';
+    if(!r.ok){q('batchOut').innerHTML=`<p class="text-red">Error: ${await r.text()}</p>`;return;}
+    const res=await r.json();
+    q('batchOut').innerHTML=`<div class="card"><div class="card-title">Batch Results — ${res.n_rows} rows · ${res.latency_ms}ms</div>
+      <button class="btn btn-secondary btn-sm" onclick="downloadCSV(\`${(res.csv||'').replace(/`/g,'\\`')}\`,'predictions.csv')" style="margin-bottom:12px">⬇ Download CSV</button>
+      <div class="tbl"><table><thead><tr><th>Row</th><th>Prediction</th>${res.probabilities?'<th>Confidence</th>':''}</tr></thead>
+      <tbody>${(res.predictions||[]).slice(0,20).map((p,i)=>`<tr><td class="mono">${i}</td><td class="mono text-accent">${p}</td>${res.probabilities?`<td class="mono">${(Math.max(...(res.probabilities[i]||[0]))*100).toFixed(1)}%</td>`:''}</tr>`).join('')}
+      ${res.predictions?.length>20?`<tr><td colspan="3" class="text-muted text-sm" style="text-align:center">… ${res.predictions.length-20} more rows in CSV</td></tr>`:''}</tbody></table></div>
+    </div>`;
+  }catch(e){q('batchBtn').disabled=false;q('batchBtn').textContent='Upload & Predict';q('batchOut').innerHTML=`<p class="text-red">${esc(e.message)}</p>`;}
+}
+function downloadCSV(csv,filename){const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=filename;a.click();}
+function buildApiCode(eid,schema){
+  const feats=schema.features||[];
+  const sample=Object.fromEntries(feats.map(f=>[f.name,f.type==='numeric'?(f.median??0):(f.categories?.[0]||'')]));
+  const sampleStr=JSON.stringify(sample,null,2);
+  q('apiOut').innerHTML=`<div class="code-block">
+    <div class="lang-tabs">
+      <button class="lang-tab on" onclick="setLang(this,'curl')">cURL</button>
+      <button class="lang-tab" onclick="setLang(this,'python')">Python</button>
+      <button class="lang-tab" onclick="setLang(this,'js')">JavaScript</button>
+      <button class="code-copy-btn" onclick="copyCode()">copy</button>
+    </div>
+    <div id="api-curl">curl -X POST http://localhost:8000/experiments/${eid}/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{"data": [${JSON.stringify(sample)}]}'</div>
+    <div id="api-python" style="display:none">import requests
+data = {"data": [${sampleStr}]}
+r = requests.post("http://localhost:8000/experiments/${eid}/predict", json=data)
+print(r.json())</div>
+    <div id="api-js" style="display:none">const res = await fetch('/experiments/${eid}/predict', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({data: [${sampleStr}]})
+});
+console.log(await res.json());</div>
+  </div>`;
+}
+function setLang(btn,lang){btn.closest('.code-block').querySelectorAll('.lang-tab').forEach(x=>x.classList.remove('on'));['curl','python','js'].forEach(l=>{const e=document.getElementById('api-'+l);if(e)e.style.display=l===lang?'':'none';});btn.classList.add('on');}
+function copyCode(){const vis=document.querySelector('#api-curl:not([style*="none"]),#api-python:not([style*="none"]),#api-js:not([style*="none"])');if(vis)navigator.clipboard.writeText(vis.textContent);}
+
+// ── Scenarios ─────────────────────────────────────────────────────────────────
+async function fillWiSel(){fillSel('wiSel',await getExps(),l=>l.filter(e=>e.status==='completed'&&e.in_memory));}
+async function loadWI(){
+  const eid=q('wiSel').value;if(!eid)return;const el=q('wiOut');el.innerHTML=spin();
+  const r=await fetch('/experiments/'+eid+'/schema',{headers:ah()});
+  if(!r.ok){el.innerHTML='<div class="card"><p class="text-muted">Schema unavailable.</p></div>';return;}
+  WI_SCHEMA=await r.json();renderWI(eid,WI_SCHEMA,el);
+}
+let WI_SCENARIOS=[{id:1,vals:{}},{id:2,vals:{}}];
+function renderWI(eid,schema,el){
+  const numFeats=schema.features.filter(f=>f.type==='numeric').slice(0,10);
+  const catFeats=schema.features.filter(f=>f.type==='categorical').slice(0,4);
+  WI_SCENARIOS=[{id:1,vals:{}},{id:2,vals:{}}];WI_PREDS={};
+  schema.features.forEach(f=>{WI_SCENARIOS.forEach(s=>{s.vals[f.name]=f.type==='numeric'?(f.median??f.mean??0):(f.categories?.[0]||'');});});
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px" id="scenarioCols">
+    ${WI_SCENARIOS.map((sc,si)=>buildScenarioCol(sc,si,numFeats,catFeats,eid)).join('')}
+    <div id="addScenBtn" style="display:flex;align-items:center;justify-content:center">
+      <button class="btn btn-secondary" onclick="addScenario('${eid}')">+ Add Scenario</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">Prediction Comparison</div>${cw(120,'wiChart')}</div>`;
+  setTimeout(()=>WI_SCENARIOS.forEach(sc=>wiPredict(eid,sc.id)),400);
+}
+function buildScenarioCol(sc,si,numFeats,catFeats,eid){
+  const colors=['var(--accent)','var(--purple)','var(--green)'];
+  return`<div class="scenario-col${si===0?' active':''}" id="scenario-${sc.id}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:${colors[si%3]}">Scenario ${sc.id}</div>
+      ${si>1?`<button class="btn btn-danger btn-xs" onclick="removeScenario(${sc.id})">✕</button>`:''}
+    </div>
+    ${numFeats.map(f=>`<div class="si-row">
+      <div class="si-label">${esc(f.name)}</div>
+      <input type="range" style="flex:1" id="wi_${sc.id}_${sid(f.name)}"
+        min="${f.min??0}" max="${f.max??1}" step="${((f.max??1)-(f.min??0))/100||0.01}"
+        value="${sc.vals[f.name]??f.median??f.mean??0}"
+        oninput="wiSlider(${sc.id},'${f.name.replace(/'/g,"\\'")}',this.value,'${eid}')"/>
+      <div id="wiv_${sc.id}_${sid(f.name)}" style="width:60px;font-size:10px;font-family:var(--mono);text-align:right;flex-shrink:0;color:var(--accent)">${(sc.vals[f.name]??0).toFixed?.(2)??sc.vals[f.name]}</div>
+    </div>`).join('')}
+    ${catFeats.map(f=>`<div class="si-row">
+      <div class="si-label">${esc(f.name)}</div>
+      <select class="sel" id="wi_${sc.id}_${sid(f.name)}" style="flex:1;padding:3px 6px;font-size:10px"
+        onchange="wiSlider(${sc.id},'${f.name.replace(/'/g,"\\'")}',this.value,'${eid}')">
+        ${(f.categories||[]).map(c=>`<option ${sc.vals[f.name]===c?'selected':''}>${esc(c)}</option>`).join('')}
+      </select><div></div>
+    </div>`).join('')}
+    <div class="si-pred" id="wipred-${sc.id}">
+      <div class="text-muted text-sm">Prediction</div>
+      <span class="si-pred-val" id="wiPv-${sc.id}">—</span>
+      <div class="si-conf" id="wiConf-${sc.id}"></div>
+    </div>
+  </div>`;
+}
+function wiSlider(sid_num,name,val,eid){
+  const sc=WI_SCENARIOS.find(s=>s.id===sid_num);if(!sc)return;
+  const parsed=isNaN(val)?val:parseFloat(val);sc.vals[name]=parsed;
+  const lbl=q('wiv_'+sid_num+'_'+sid(name));if(lbl)lbl.textContent=typeof parsed==='number'?parsed.toFixed(2):parsed;
+  clearTimeout(WI_DEBOUNCE[sid_num]);WI_DEBOUNCE[sid_num]=setTimeout(()=>wiPredict(eid,sid_num),300);
+}
+async function wiPredict(eid,scid){
+  const sc=WI_SCENARIOS.find(s=>s.id===scid);if(!sc||!WI_SCHEMA)return;
+  const row={};WI_SCHEMA.features.forEach(f=>{const v=sc.vals[f.name];row[f.name]=v!==undefined?v:(f.type==='numeric'?(f.median??f.mean??0):(f.categories?.[0]||''));});
+  try{
+    const r=await fetch('/experiments/'+eid+'/predict',{method:'POST',headers:ah(),body:JSON.stringify({data:[row]})});
+    if(!r.ok){const pEl=q('wiPv-'+scid);if(pEl)pEl.textContent='error';return;}
+    const res=await r.json();
+    const pred=res.predictions?.[0];
+    const probs=res.probabilities?.[0];
+    const conf=probs&&probs.length?Math.max(...probs):null;
+    const pEl=q('wiPv-'+scid),cEl=q('wiConf-'+scid);
+    if(pEl) pEl.textContent=typeof pred==='number'?pred.toFixed(4):String(pred??'—');
+    if(cEl) cEl.textContent=conf!=null?`${(conf*100).toFixed(1)}% confidence`:'';
+    // For chart: use confidence for classification, raw value for regression
+    const chartVal = conf!=null ? conf : (typeof pred==='number'?pred:0);
+    WI_PREDS[scid]={pred:chartVal, label:typeof pred==='number'?'S'+scid:`S${scid}: ${String(pred).slice(0,8)}`};
+    updateWIChart();
+  }catch(e){const pEl=q('wiPv-'+scid);if(pEl)pEl.textContent='error';}
+}
+function updateWIChart(){
+  const wrap=q('wiChart');if(!wrap)return;
+  // Use requestAnimationFrame so canvas is painted before Chart.js measures it
+  requestAnimationFrame(()=>{
+    const ctx=q('wiChart');if(!ctx)return;
+    if(CH.wi){CH.wi.destroy();CH.wi=null;}
+    const data=WI_SCENARIOS.map(sc=>WI_PREDS[sc.id]||{pred:0,label:'S'+sc.id});
+    const hasConf=WI_SCHEMA&&WI_SCHEMA.problem_type==='classification';
+    CH.wi=new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:data.map(x=>x.label),
+        datasets:[{
+          data:data.map(x=>x.pred),
+          backgroundColor:PAL.slice(0,data.length).map(c=>c+'cc'),
+          borderRadius:6,borderWidth:0
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>hasConf?`Confidence: ${(ctx.parsed.y*100).toFixed(1)}%`:`Value: ${ctx.parsed.y.toFixed(4)}`}}
+        },
+        scales:{
+          y:{
+            beginAtZero:true,
+            max:hasConf?1:undefined,
+            grid:{color:'#f3f4f6'},
+            ticks:{color:'#9ca3af',font:{size:9},callback:v=>hasConf?(v*100).toFixed(0)+'%':v}
+          },
+          x:{grid:{display:false},ticks:{color:'#374151',font:{size:11}}}
+        }
+      }
+    });
+  });
+}
+function addScenario(eid){
+  if(WI_SCENARIOS.length>=3||!WI_SCHEMA)return;
+  const newId=Math.max(...WI_SCENARIOS.map(s=>s.id))+1;const newSc={id:newId,vals:{}};
+  WI_SCHEMA.features.forEach(f=>{newSc.vals[f.name]=f.type==='numeric'?(f.median??f.mean??0):(f.categories?.[0]||'');});
+  WI_SCENARIOS.push(newSc);
+  const numFeats=WI_SCHEMA.features.filter(f=>f.type==='numeric').slice(0,10);
+  const catFeats=WI_SCHEMA.features.filter(f=>f.type==='categorical').slice(0,4);
+  const btn=q('addScenBtn');
+  const col=document.createElement('div');col.innerHTML=buildScenarioCol(newSc,WI_SCENARIOS.length-1,numFeats,catFeats,eid);
+  btn.parentElement.insertBefore(col.firstChild,btn);
+  if(WI_SCENARIOS.length>=3)btn.style.display='none';
+  setTimeout(()=>wiPredict(eid,newId),300);
+}
+function removeScenario(sid_num){
+  WI_SCENARIOS=WI_SCENARIOS.filter(s=>s.id!==sid_num);delete WI_PREDS[sid_num];
+  const el=q('scenario-'+sid_num);if(el)el.remove();
+  const btn=q('addScenBtn');if(btn)btn.style.display='';
+  updateWIChart();
+}
+
+// ── Deploy ────────────────────────────────────────────────────────────────────
+async function fillDepSel(){fillSel('depSel',await getExps(),l=>l.filter(e=>e.status==='completed'),true);}
+async function onDepSel(){
+  const eid=q('depSel').value;if(!eid)return;
+  const r=await fetch('/experiments/'+eid+'/deployment',{headers:ah()});
+  const dep=r.ok?await r.json():{};
+  const prevTarget=dep.target||'local';
+
+  q('depContent').innerHTML=`
+  <div class="g2" style="align-items:start">
+    <div>
+      <div class="card">
+        <div class="card-title">Standard Deploy</div>
+        ${[
+          ['local','🖥 Local FastAPI Server','One command → REST API on localhost:9000. Best for testing & local use.'],
+          ['docker','🐳 Docker Container','Production-ready containerized API. Deploy anywhere Docker runs.'],
+          ['export','📦 Python Bundle','Portable model_bundle.pkl + inference script. Integrate into any Python app.'],
+        ].map(([val,title,desc])=>`
+          <div class="dep-option ${prevTarget===val?'on':''}" onclick="selectDep(this,'${val}')">
+            <div class="dep-option-title">${title}</div>
+            <div class="dep-option-desc">${desc}</div>
+          </div>`).join('')}
+        <input type="hidden" id="depTarget" value="${prevTarget}"/>
+        <button class="btn btn-primary btn-full" style="margin-top:14px" onclick="doDeploy('${eid}')">
+          Deploy →
+        </button>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="border:2px solid #fde68a;background:linear-gradient(135deg,#fffbeb,#fff)">
+        <div class="card-title" style="color:#b45309">🤗 Hugging Face Spaces — One-Click Deploy</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+          Deploy a <b>live public Gradio UI</b> on HF Spaces — free hosting, permanent URL, shareable. Ready in ~90 seconds.
+        </p>
+
+        <div style="background:#fef9c3;border:1px solid #fde047;border-radius:var(--radius);padding:10px 12px;margin-bottom:12px;font-size:11px;color:#713f12;line-height:1.8">
+          <b>⚠️ You need a WRITE token — NOT a Read token.</b><br/>
+          Most "invalid password" errors are caused by accidentally creating a Read token.<br/><br/>
+          <b>Exact steps:</b><br/>
+          1. Go to <a href="https://huggingface.co/settings/tokens" target="_blank" style="color:#b45309;font-weight:600">huggingface.co/settings/tokens ↗</a><br/>
+          2. Click <b>"New token"</b><br/>
+          3. Choose <b>Token type: Classic</b> (not Fine-grained)<br/>
+          4. Set <b>Role: Write</b> (this is the critical step!)<br/>
+          5. Click Generate → <b>Copy the full hf_xxx... token</b>
+        </div>
+
+        <div class="field">
+          <label>HF Write Token <span style="color:var(--red)">*</span></label>
+          <div style="display:flex;gap:6px">
+            <input class="inp" id="hfToken" type="password" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxx" style="flex:1" oninput="clearHFStatus()"/>
+            <button class="btn btn-secondary btn-sm" onclick="testHFToken('${eid}')" id="hfTestBtn" style="flex-shrink:0;white-space:nowrap;min-width:64px">✓ Test</button>
+          </div>
+          <div id="hfTokenStatus" style="font-size:11px;margin-top:6px;line-height:1.6"></div>
+        </div>
+        <div class="field">
+          <label>Space Name <span style="font-size:10px;color:var(--muted);font-weight:400">(your repo name on HF)</span></label>
+          <input class="inp" id="hfRepoName" value="automl-${eid}" placeholder="my-model-space"/>
+        </div>
+        <button class="btn btn-full" style="background:#f59e0b;color:#fff;font-weight:600;padding:10px;margin-bottom:6px" onclick="deployHF('${eid}')" id="hfBtn">
+          🤗 Deploy to Hugging Face Spaces →
+        </button>
+        <p style="font-size:10px;color:var(--muted);text-align:center">Tip: click <b>✓ Test</b> first to verify your token is valid</p>
+      </div>
+    </div>
+  </div>
+  <div id="depResult" style="margin-top:14px">${renderDepResult(dep,eid)}</div>`;
+}
+
+function selectDep(el,val){
+  document.querySelectorAll('.dep-option').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');q('depTarget').value=val;
+}
+
+async function doDeploy(eid){
+  const target=q('depTarget').value;
+  const btn=document.querySelector('[onclick*="doDeploy"]');
+  if(btn){btn.disabled=true;btn.textContent='Deploying…';}
+  try{
+    const r=await fetch('/experiments/'+eid+'/deploy?target='+target,{method:'POST',headers:ah()});
+    if(!r.ok){const err=await r.text();alert('Deploy failed: '+err);return;}
+    q('depResult').innerHTML=renderDepResult(await r.json(),eid);
+  }finally{if(btn){btn.disabled=false;btn.textContent='Deploy →';}}
+}
+
+function clearHFStatus(){
+  const s=q('hfTokenStatus');if(s)s.innerHTML='';
+  document.querySelectorAll('.hf-error-msg').forEach(el=>el.remove());
+}
+
+async function testHFToken(eid){
+  const token = q('hfToken').value.replace(/\s/g,'').replace(/^["']|["']$/g,'');
+  const status = q('hfTokenStatus');
+  const btn = q('hfTestBtn');
+  if(!token){
+    status.innerHTML='<span style="color:var(--red)">❌ Paste your token first</span>';
+    return;
+  }
+  btn.disabled=true; btn.textContent='Testing…';
+  status.innerHTML='<span style="color:var(--muted)">Contacting Hugging Face…</span>';
+  try{
+    const r = await fetch('/api/test-hf-token',{
+      method:'POST', headers:ah(),
+      body:JSON.stringify({token})
+    });
+    const d = await r.json();
+    if(d.ok){
+      const role = d.token_role||'write';
+      status.innerHTML=`<div style="background:var(--green-light);border:1px solid #bbf7d0;border-radius:var(--radius);padding:8px 10px;line-height:1.8">
+        ✅ <b>Token valid!</b> Logged in as <b>${esc(d.username)}</b><br/>
+        Token role: <b style="color:var(--green)">${esc(role)}</b> · Length: ${d.token_len} chars<br/>
+        <span style="color:var(--green)">Ready to deploy! Click the button below.</span>
+      </div>`;
+      // Auto-suggest a good repo name
+      const rnEl=q('hfRepoName');
+      if(rnEl && rnEl.value.startsWith('automl-')){
+        rnEl.value=`${d.username}-automl-${eid}`.toLowerCase().replace(/[^a-z0-9\-]/g,'-').slice(0,40);
+      }
+    } else {
+      // Show detailed error with specific fix instructions
+      const errLines = (d.error||'Invalid token').split('\n');
+      const errHtml = errLines.map((l,i)=>i===0?`<b>${esc(l)}</b>`:esc(l)).join('<br/>');
+      status.innerHTML=`<div style="background:var(--red-light);border:1px solid #fecaca;border-radius:var(--radius);padding:8px 10px;line-height:1.8;color:var(--red)">
+        ❌ ${errHtml}<br/>
+        ${d.token_len?`Token length: ${d.token_len} chars, starts with: <code>${esc(d.token_prefix||'?')}</code><br/>`:''}
+        <a href="https://huggingface.co/settings/tokens" target="_blank" style="color:var(--red);font-weight:600">→ Fix: Create a new Write token here</a>
+      </div>`;
+    }
+  }catch(e){
+    status.innerHTML=`<span style="color:var(--red)">Network error: ${esc(e.message)}</span>`;
+  }finally{
+    btn.disabled=false; btn.textContent='✓ Test';
+  }
+}
+
+async function deployHF(eid){
+  const token = q('hfToken').value.replace(/\s/g,'').replace(/^["']|["']$/g,'');
+  const repoName = (q('hfRepoName').value||'').trim().replace(/[^a-zA-Z0-9_\-]/g,'-') || ('automl-'+eid);
+  const statusEl = q('hfTokenStatus');
+  const btn = q('hfBtn');
+
+  document.querySelectorAll('.hf-error-msg').forEach(el=>el.remove());
+
+  if(!token){
+    statusEl.innerHTML='<span style="color:var(--red)">❌ Paste your HF Write token first, then click ✓ Test to verify it.</span>';
+    q('hfToken').focus(); return;
+  }
+  if(!token.startsWith('hf_')){
+    statusEl.innerHTML=`<div style="background:var(--red-light);border:1px solid #fecaca;border-radius:var(--radius);padding:8px 10px;color:var(--red)">
+      ❌ Token must start with <code>hf_</code> — yours starts with <code>${esc(token.slice(0,8))}</code><br/>
+      Make sure you copied the full token. <a href="https://huggingface.co/settings/tokens" target="_blank" style="color:var(--red);font-weight:600">Get token here →</a>
+    </div>`;
+    return;
+  }
+
+  btn.disabled=true;
+  btn.style.background='#9ca3af';
+  statusEl.innerHTML='<span style="color:var(--muted)">⏳ Validating token…</span>';
+
+  try{
+    btn.textContent='⏳ Uploading to Hugging Face…';
+    const r = await fetch('/experiments/'+eid+'/deploy/huggingface',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},
+      body: JSON.stringify({hf_token: token, repo_name: repoName})
+    });
+
+    const rawText = await r.text();
+    let data;
+    try{ data = JSON.parse(rawText); }catch(e){ data = {detail: rawText}; }
+
+    if(!r.ok){
+      const msg = (data && data.detail) ? String(data.detail) : rawText;
+      const errDiv = document.createElement('div');
+      errDiv.className = 'hf-error-msg';
+      errDiv.style.cssText = 'margin-top:10px;padding:12px;background:var(--red-light);border:1px solid #fecaca;border-radius:var(--radius);font-size:12px;color:var(--red);line-height:1.8';
+      // Format multi-line error messages nicely
+      const msgLines = msg.split('\n').filter(Boolean);
+      let html = msgLines.map((l,i)=>{
+        if(i===0) return `<b>❌ ${esc(l)}</b>`;
+        if(l.match(/^[①②③④⑤]|^\d\./)) return `<br/>${esc(l)}`;
+        return `<br/>${esc(l)}`;
+      }).join('');
+      html += `<br/><br/><a href="https://huggingface.co/settings/tokens" target="_blank" style="color:var(--red);font-weight:600;text-decoration:underline">→ Open HF Token Settings</a>`;
+      errDiv.innerHTML = html;
+      btn.parentElement.appendChild(errDiv);
+      statusEl.innerHTML='';
+      return;
+    }
+
+    q('depResult').innerHTML = renderHFResult(data);
+    btn.textContent = '✅ Deployed!';
+    btn.style.background = '#16a34a';
+    statusEl.innerHTML = '<span style="color:var(--green)">✅ Upload complete! Space is building…</span>';
+    q('hfToken').value = '';
+
+  }catch(e){
+    const errDiv = document.createElement('div');
+    errDiv.className = 'hf-error-msg';
+    errDiv.style.cssText = 'margin-top:10px;padding:10px;background:var(--red-light);border-radius:var(--radius);font-size:12px;color:var(--red)';
+    errDiv.textContent = '❌ Network error: '+e.message;
+    btn.parentElement.appendChild(errDiv);
+  }finally{
+    if(btn.textContent!=='✅ Deployed!'){
+      btn.disabled = false;
+      btn.textContent = '🤗 Deploy to Hugging Face Spaces →';
+      btn.style.background = '#f59e0b';
+    }
+  }
+}
+
+function renderHFResult(d){
+  return`<div class="card" style="border:2px solid #bbf7d0;background:var(--green-light)">
+    <div class="card-title" style="color:var(--green)">🎉 Live on Hugging Face!</div>
+    <p style="font-size:13px;font-weight:600;margin-bottom:12px">${esc(d.message||'')}</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <a href="${esc(d.space_url||'')}" target="_blank" class="btn btn-primary">🤗 Open Space ↗</a>
+      <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${esc(d.space_url||'')}');this.textContent='Copied!'">📋 Copy URL</button>
+    </div>
+    <div style="background:var(--bg);border-radius:var(--radius);padding:10px 12px;font-size:12px">
+      <div style="margin-bottom:4px"><b>Space URL:</b> <a href="${esc(d.space_url||'')}" target="_blank" class="mono text-accent">${esc(d.space_url||'')}</a></div>
+      <div style="margin-bottom:4px"><b>API Endpoint:</b> <span class="mono">${esc(d.embed_url||'')} /predict</span></div>
+      <div style="color:var(--muted);font-size:11px;margin-top:8px">⏳ The Space may take 60–120 seconds to start building. Refresh the Space page after a minute.</div>
+    </div>
+  </div>`;
+}
+
+function renderDepResult(d,eid){
+  if(!d||d.status==='not_deployed') return '';
+  if(d.target==='huggingface') return renderHFResult(d);
+  if(!d.files?.length) return '';
+  return`<div class="card"><div class="card-title">✅ Deployment Ready — ${esc(d.target||'export')}</div>
+    ${d.run_command?`<div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--muted)">Run Command</div>
+      <div class="code-block" style="margin-bottom:10px">${esc(d.run_command)}<button class="code-copy-btn" onclick="navigator.clipboard.writeText(this.previousSibling.textContent.trim());this.textContent='✓'">copy</button></div>`:''}
+    ${d.predict_url?`<div style="font-size:12px;margin-bottom:10px">Predict endpoint: <a href="${esc(d.predict_url)}" target="_blank" class="mono text-accent">${esc(d.predict_url)}</a></div>`:''}
+    ${d.docs_url?`<div style="font-size:12px;margin-bottom:10px">Swagger docs: <a href="${esc(d.docs_url)}" target="_blank" class="mono text-accent">${esc(d.docs_url)}</a></div>`:''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${(d.files||[]).map(f=>`<a href="/experiments/${eid}/download/${esc(f)}" class="btn btn-secondary btn-sm">⬇ ${esc(f)}</a>`).join('')}</div>
+  </div>`;
+}
+
+// ── Reports ───────────────────────────────────────────────────────────────────
+async function fillRepSel(){fillSel('repSel',await getExps(),l=>l.filter(e=>e.status==='completed'),true);}
+async function loadReport(){
+  const eid=q('repSel').value;if(!eid)return;const el=q('repOut');el.innerHTML=spin();
+  const r=await fetch('/experiments/'+eid+'/model-card',{headers:ah()});
+  if(!r.ok){el.innerHTML='<div class="empty"><h3>Not available</h3></div>';return;}
+  const mc=await r.json();
+  const perf=mc.performance||{},tf=mc.top_features||[];
+  el.innerHTML=`<div class="g2" style="margin-bottom:14px">
+    <div class="card"><div class="card-title">Model Card</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">${esc(mc.model_name)}</div>
+      <div class="text-muted text-sm" style="margin-bottom:14px">${esc(mc.dataset_name)} · v${mc.version}</div>
+      <div class="row2" style="gap:6px">${[['Task',mc.task_type],['Target',mc.target_column],['Models eval.',(mc.training_details?.models_evaluated||'—')],['Train time',(mc.training_details?.training_time_sec||0)+'s']].map(([k,v])=>`<div style="background:var(--bg2);border-radius:var(--radius);padding:8px"><div style="font-weight:600;font-size:12px">${esc(v||'—')}</div><div class="text-muted text-sm">${k}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="card"><div class="card-title">Performance</div>
+      ${Object.entries(perf).slice(0,6).map(([k,v])=>`<div class="fbar-row"><div class="fbar-label">${k.replace(/_/g,' ')}</div><div class="fbar-track"><div class="fbar-fill green" style="width:${Math.min(100,typeof v==='number'?v*100:0)}%"></div></div><div class="fbar-val text-accent">${typeof v==='number'?v.toFixed(4):v}</div></div>`).join('')}
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="card-title">Top Features</div>
+    ${tf.slice(0,10).map((f,i)=>`<div class="fbar-row"><div class="fbar-label">${i+1}. ${esc(f.feature)}</div><div class="fbar-track"><div class="fbar-fill" style="width:${(f.importance/(tf[0]?.importance||1)*100).toFixed(1)}%"></div></div><div class="fbar-val">${f.importance.toFixed(4)}</div></div>`).join('')||'<p class="text-muted text-sm">No data</p>'}
+  </div>
+  <div style="display:flex;gap:8px">
+    <a href="/experiments/${eid}/report" class="btn btn-primary">⬇ Download HTML Report</a>
+    <button class="btn btn-secondary" onclick="go('narrative');q('narrSel').value='${eid}';loadNarrative()">📖 AutoNarrative</button>
+    <a href="/experiments/${eid}/model-card" target="_blank" class="btn btn-secondary">View JSON ↗</a>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AGENT AI JAVASCRIPT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const AGENT_TITLES = {
+  'agent': '🤖 Agentic AutoML',
+  'agent-chat': '💬 AI Chat',
+  'agent-settings': '⚙ Agent Settings',
+};
+Object.assign(TITLES, AGENT_TITLES);
+
+// Agent pages trigger their own loaders
+const _goBase = go;
+function go(name) {
+  // go() already handles page/nav switching; we add agent hooks
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  const pg=q('page-'+name);if(pg)pg.classList.add('on');
+  const nb=q('nb-'+name);if(nb)nb.classList.add('on');
+  if(q('tbTitle'))q('tbTitle').textContent=TITLES[name]||name;
+  if(name==='dashboard') loadDashboard();
+  if(name==='experiments') loadExps();
+  if(name==='compare') loadCompareList();
+  if(name==='agent-settings') loadAgentStatus();
+  if(name==='agent') loadAgentStatus();
+  if(name==='agent-chat'){ fillChatExpSel(); loadChatHistory(); }
+}
+
+// ── Agent Settings ────────────────────────────────────────────────────────────
+async function loadAgentStatus(){
+  try{
+    const d = await(await fetch('/agent/config',{headers:ah()})).json();
+    const el = q('agentStatusDetail');
+    const banner = q('agentStatusBanner');
+    const routing = d.routing || {};
+    if(el) el.innerHTML = d.enabled
+      ? `<div style="display:flex;align-items:center;gap:12px"><div style="font-size:28px">✅</div><div>
+          <div style="font-weight:700;color:var(--green)">Claude Active</div>
+          <div style="font-size:11px;color:var(--muted)">Chat/Insights: <b>${esc(d.model)}</b></div>
+          <div style="font-size:11px;color:var(--muted)">Key: ${esc(d.key_preview)}</div>
+          <div style="margin-top:8px;font-size:10px;background:var(--bg3);border-radius:4px;padding:6px 8px;font-family:var(--mono)">
+            plan → haiku · reflect → haiku<br/>
+            insights → ${esc(routing.insights||'haiku')} · chat → ${esc(routing.chat||'haiku')}
+          </div>
+        </div></div>`
+      : `<div style="display:flex;align-items:center;gap:12px"><div style="font-size:28px">⚙️</div><div>
+          <div style="font-weight:700;color:var(--yellow)">Rule-based mode (0 tokens)</div>
+          <div style="font-size:11px;color:var(--muted)">Add Anthropic API key to enable LLM</div>
+          <div style="font-size:11px;color:var(--muted)">Planning still works — uses intelligent heuristics</div></div></div>`;
+    if(banner){
+      banner.style.display='';
+      if(!d.enabled){
+        banner.innerHTML=`<div style="background:var(--yellow-light);border:1px solid #fde68a;border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--yellow);display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">⚙️</span>
+          <span>Agent running in <b>rule-based mode</b>. <a href="javascript:void(0)" onclick="go('agent-settings')" style="color:var(--yellow);font-weight:600">Add Anthropic API key →</a></span></div>`;
+      } else {
+        banner.innerHTML=`<div style="background:var(--green-light);border:1px solid #bbf7d0;border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--green);display:flex;align-items:center;gap:10px">
+          <span>🧠</span><span><b>Claude ${esc(d.model)}</b> active — LLM will orchestrate the entire pipeline.</span></div>`;
+      }
+    }
+    const modelSel=q('agentModel');
+    if(modelSel&&d.model)modelSel.value=d.model;
+  }catch(e){}
+}
+
+async function saveAgentConfig(){
+  const key=(q('agentApiKey')?.value||'').trim();
+  const model=q('agentModel')?.value||'llama-3.1-8b-instant';
+  const r=await fetch('/agent/config',{method:'POST',headers:ah(),body:JSON.stringify({api_key:key,model})});
+  const d=await r.json();
+  const el=q('agentConfigStatus');
+  if(el) el.innerHTML=d.ok
+    ? `<div style="color:var(--green);font-size:12px">${esc(d.message||'Saved!')}</div>`
+    : `<div style="color:var(--red);font-size:12px">❌ ${esc(d.message||'Error')}</div>`;
+  loadAgentStatus();
+}
+
+async function testAgentKey(){
+  const el=q('agentConfigStatus');
+  if(el)el.innerHTML='<span style="color:var(--muted);font-size:12px">Testing…</span>';
+  try{
+    const r=await fetch('/agent/test-key',{method:'POST',headers:ah()});
+    const d=await r.json();
+    if(el) el.innerHTML=d.ok
+      ? `<div style="color:var(--green);font-size:12px">✅ ${esc(d.message)} · replied: "${esc(d.reply)}"</div>`
+      : `<div style="color:var(--red);font-size:12px">❌ ${esc(d.error)}</div>`;
+  }catch(e){if(el)el.innerHTML=`<div style="color:var(--red);font-size:12px">Error: ${esc(e.message)}</div>`;}
+}
+
+// ── Agentic Training ──────────────────────────────────────────────────────────
+function onAgentFile(inp){
+  const f=inp.files[0];if(!f)return;
+  const badge=q('agentFileBadge');
+  if(badge)badge.innerHTML=`<div class="file-badge">✓ ${esc(f.name)} · ${(f.size/1024/1024).toFixed(2)} MB</div>`;
+  const dz=q('agentDropZone');
+  if(dz){dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+    dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));}
+}
+
+async function startAgentTrain(){
+  const file=q('agentFileIn')?.files[0];
+  const target=(q('agentTarget')?.value||'').trim();
+  const name=(q('agentName')?.value||'').trim();
+  if(!file){alert('Select a dataset file.');return;}
+  if(!target){alert('Enter the target column name.');return;}
+  const btn=q('agentLaunchBtn');
+  btn.disabled=true;btn.textContent='🤖 Agent launching…';
+  const fd=new FormData();
+  fd.append('file',file);fd.append('target_col',target);fd.append('dataset_name',name);
+  try{
+    const r=await fetch('/agent/train',{method:'POST',headers:{Authorization:'Bearer '+TOKEN},body:fd});
+    if(!r.ok){alert('Error: '+await r.text());btn.disabled=false;btn.textContent='🤖 Launch Agentic AutoML';return;}
+    const d=await r.json();
+    btn.disabled=false;btn.textContent='🤖 Launch Agentic AutoML';
+    const prog=q('agentProgress');if(prog)prog.style.display='';
+    const phaseEl=q('agentPhase');const cons=q('agentConsole');
+    const phases=['🔍 Analyzing Dataset','🧠 LLM Planning Strategy','⚙️ Preprocessing','🤖 Training Models','🔄 Reflection & Refinement','✍️ Generating Insights','💾 Saving'];
+    let reactIterCount=0;
+    const es=new EventSource('/experiments/'+d.experiment_id+'/logs/stream');
+    es.onmessage=ev=>{
+      const raw=ev.data;
+      if(raw==='"__DONE__"'||raw==='__DONE__'){es.close();return;}
+      let line;try{line=JSON.parse(raw);}catch{line=raw;}
+      if(cons){
+        const div=document.createElement('div');
+        div.style.cssText='font-size:11px;padding:1px 0;';
+        const isThought=line.includes('💭');
+        div.style.color=isThought?'#c4b5fd':
+          line.includes('🔧')?'#fdba74':
+          line.includes('✅')||line.includes('Done')?'#4ade80':
+          line.includes('❌')?'#f87171':
+          line.includes('🤖')||line.includes('Agent')||line.includes('━')?'#93c5fd':'#7dd3fc';
+        div.textContent=line;cons.appendChild(div);cons.scrollTop=cons.scrollHeight;
+      }
+      // Drive multi-agent status bars
+      const barData=q('barDataStatus'),barModel=q('barModelStatus'),barInsight=q('barInsightStatus');
+      const bData=q('bar-data'),bModel=q('bar-model'),bInsight=q('bar-insight');
+      if(line.includes('DataAgent')||line.includes('investigating')||line.includes('Investigating')){
+        if(barData)barData.textContent='Running…';
+        if(bData)bData.style.borderLeftColor='var(--accent)';
+        if(phaseEl)phaseEl.textContent='🔍 DataAgent: Investigating data quality';
+      }
+      if(line.includes('DataAgent')&&(line.includes('✅')||line.includes('clean')||line.includes('found'))){
+        if(barData)barData.textContent='✅ Done';
+        if(bData)bData.style.borderLeftColor='var(--green)';
+      }
+      if(line.includes('ModelAgent')||line.includes('ReAct')||line.includes('iteration')||line.includes('Benchmarking')){
+        if(barModel)barModel.textContent='Running…';
+        if(bModel)bModel.style.borderLeftColor='var(--accent)';
+        if(phaseEl)phaseEl.textContent='🤖 ModelAgent: ReAct experiment loop';
+      }
+      // ReAct iteration badges
+      if(line.includes('iteration')&&line.includes('Agent')){
+        const m=line.match(/iteration (\d+)/);
+        if(m){const n=parseInt(m[1]);
+          const iters=q('reactIterations');
+          if(iters&&n>reactIterCount){reactIterCount=n;
+            const badge=document.createElement('span');
+            badge.style.cssText='padding:2px 8px;background:var(--accent-light);color:var(--accent);border-radius:12px;font-size:10px;font-weight:600;border:1px solid #bfdbfe';
+            badge.textContent='Iter '+n;iters.appendChild(badge);}}}
+      if(line.includes('Action:')){
+        const m=line.match(/Action: (\w+)/);
+        if(m&&q('reactIterations')){const badges=q('reactIterations').children;
+          if(badges.length>0){const last=badges[badges.length-1];
+            last.title=m[1];last.style.background='#fef9c3';last.style.color='#a16207';
+            last.style.borderColor='#fde68a';last.textContent='Iter '+reactIterCount+': '+m[1];}}}
+      if(line.includes('InsightAgent')||line.includes('insight')){
+        if(barInsight)barInsight.textContent='Running…';
+        if(bInsight)bInsight.style.borderLeftColor='var(--accent)';
+        if(phaseEl)phaseEl.textContent='✍️ InsightAgent: Generating narrative';
+      }
+      if(line.includes('complete!')||line.includes('Agentic run complete')){
+        if(barModel)barModel.textContent='✅ Done';
+        if(bModel)bModel.style.borderLeftColor='var(--green)';
+        if(barInsight)barInsight.textContent='✅ Done';
+        if(bInsight)bInsight.style.borderLeftColor='var(--green)';
+      }
+    };
+    const poll=setInterval(async()=>{
+      try{const ds=await(await fetch('/experiments/'+d.experiment_id+'/status',{headers:ah()})).json();
+        if(ds.status==='completed'){clearInterval(poll);es.close();
+          if(phaseEl){phaseEl.textContent='✅ Complete!';phaseEl.style.color='var(--green)';}
+          fillAllSels();updateExpBadge();
+          setTimeout(()=>loadAgentResult(d.experiment_id),1500);}
+        if(ds.status==='failed'){clearInterval(poll);es.close();
+          if(phaseEl){phaseEl.textContent='❌ Failed';phaseEl.style.color='var(--red)';}}}catch(e){}
+    },4000);
+    showStreamPlan(d.experiment_id);
+  }catch(e){btn.disabled=false;btn.textContent='🤖 Launch Agentic AutoML';alert('Error: '+e.message);}
+}
+
+async function showStreamPlan(eid){
+  const el=q('agentLiveReasoning');if(!el)return;
+  el.innerHTML=`<div class="card"><div class="card-title">🧠 LLM Reasoning</div>
+    <div id="agentReasonStream" style="font-size:11px;color:#7dd3fc;line-height:1.8;max-height:260px;overflow-y:auto;background:#0f172a;border-radius:var(--radius);padding:12px;font-family:var(--mono);white-space:pre-wrap;word-break:break-word"></div></div>`;
+  const streamEl=q('agentReasonStream');
+  try{
+    const es=new EventSource('/agent/stream-plan?experiment_id='+eid);
+    es.onmessage=ev=>{
+      if(ev.data==='"__DONE__"'||ev.data==='__DONE__'){es.close();return;}
+      let chunk;try{chunk=JSON.parse(ev.data);}catch{chunk=ev.data;}
+      streamEl.textContent+=chunk;streamEl.scrollTop=streamEl.scrollHeight;};
+    es.onerror=()=>es.close();
+  }catch(e){}
+}
+
+async function loadAgentResult(eid){
+  try{
+    const r=await fetch('/experiments/'+eid+'/agent-analyze',{headers:ah()});
+    if(!r.ok)return;
+    const d=await r.json();
+    const ins=d.insights||{};
+    const react=d.react_result||{};
+    const iters=d.agent_iterations||[];
+    const issues=d.data_issues||[];
+    const feats=d.features_engineered||[];
+    const thoughts=d.agent_thoughts||[];
+    const el=q('agentLiveReasoning');if(!el)return;
+
+    // Build iteration timeline
+    const iterHtml = iters.length ? `
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">⚡ ReAct Iterations</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${iters.map((it,i)=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:var(--radius);border-left:3px solid ${it.result&&it.result.best_score>0.8?'var(--green)':'var(--accent)'}">
+              <div style="font-size:10px;font-weight:700;color:var(--muted);width:14px">${i+1}</div>
+              <div style="flex:1">
+                <div style="font-size:11px;font-weight:600">${esc(it.action||'')}</div>
+                ${it.thought?`<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">${esc(it.thought.slice(0,100))}</div>`:''}
+              </div>
+              ${it.result&&it.result.best_score!=null?`<div style="font-family:var(--mono);font-size:11px;font-weight:700;color:${it.result.best_score>0.8?'var(--green)':'var(--accent)'}">${it.result.best_score.toFixed(4)}</div>`:''}
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    const thoughtHtml = thoughts.length ? `
+      <details style="margin-bottom:14px">
+        <summary style="font-size:11px;font-weight:600;color:var(--muted);cursor:pointer">💭 Agent Thoughts (${thoughts.length})</summary>
+        <div style="margin-top:8px;background:#0f172a;border-radius:var(--radius);padding:10px;font-family:var(--mono);font-size:10px;color:#c4b5fd;line-height:1.8;max-height:180px;overflow-y:auto">
+          ${thoughts.map(t=>`<div>${esc(t)}</div>`).join('')}
+        </div>
+      </details>` : '';
+
+    el.innerHTML+=`<div class="card" style="margin-top:12px;border:2px solid #bfdbfe">
+      <div class="card-title" style="color:var(--accent)">✅ Multi-Agent Run Complete</div>
+
+      ${issues.length?`<div style="background:var(--yellow-light);border:1px solid #fde68a;border-radius:var(--radius);padding:8px 10px;margin-bottom:12px;font-size:11px">
+        <b>🔍 DataAgent found ${issues.length} issue(s):</b><br/>${issues.map(i=>`• ${esc(i)}`).join('<br/>')}
+      </div>`:'<div style="background:var(--green-light);border:1px solid #bbf7d0;border-radius:var(--radius);padding:6px 10px;margin-bottom:10px;font-size:11px;color:var(--green)">✅ DataAgent: No data quality issues found</div>'}
+
+      ${feats.length?`<div style="background:var(--purple-light);border:1px solid #ddd6fe;border-radius:var(--radius);padding:6px 10px;margin-bottom:10px;font-size:11px;color:var(--purple)">🔧 Feature engineering applied: ${feats.join(', ')}</div>`:''}
+
+      ${iterHtml}
+      ${thoughtHtml}
+
+      ${ins.executive_summary?`<p style="font-size:13px;font-weight:600;margin-bottom:10px;line-height:1.6">${esc(ins.executive_summary)}</p>`:''}
+      ${ins.model_explanation?`<div class="insight-box">${esc(ins.model_explanation)}</div>`:''}
+      ${(ins.key_findings||[]).map(f=>`<div style="padding:3px 0;font-size:12px">🔑 ${esc(f)}</div>`).join('')}
+      ${(ins.risks_and_caveats||[]).map(r=>`<div style="padding:3px 0;font-size:12px;color:var(--yellow)">⚠️ ${esc(r)}</div>`).join('')}
+      ${(ins.next_steps||[]).map(s=>`<div style="padding:3px 0;font-size:12px;color:var(--green)">→ ${esc(s)}</div>`).join('')}
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="go('experiments');setTimeout(()=>viewExp('${eid}'),100)">View Results</button>
+        <button class="btn btn-secondary btn-sm" onclick="go('agent-chat');setTimeout(()=>{if(q('chatExpSel'))q('chatExpSel').value='${eid}';loadChatHistory();},100)">💬 Chat</button>
+      </div>
+    </div>`;
+  }catch(e){console.error('loadAgentResult',e);}
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+async function fillChatExpSel(){
+  const list=await getExps();
+  const comp=list.filter(e=>e.status==='completed');
+  const el=q('chatExpSel');if(!el)return;
+  const prev=el.value;
+  el.innerHTML='<option value="">No context — general ML chat</option>'+
+    comp.map(e=>`<option value="${e.experiment_id}">${esc(e.dataset_name||e.experiment_id)} · ${e.target_col||'?'}</option>`).join('');
+  if(prev&&comp.some(e=>e.experiment_id===prev))el.value=prev;
+}
+
+async function loadChatHistory(){
+  const eid=q('chatExpSel')?.value||'';
+  try{
+    const r=await fetch('/agent/chat/history?experiment_id='+encodeURIComponent(eid),{headers:ah()});
+    const d=await r.json();
+    const msgs=d.history||[];
+    if(msgs.length>0){const el=q('chatMessages');if(el){el.innerHTML='';msgs.forEach(m=>appendChatMsg(m.role,m.content));}}
+    if(eid)loadInsightsSidebar(eid);
+  }catch(e){}
+}
+
+function appendChatMsg(role,content){
+  const el=q('chatMessages');if(!el)return;
+  const isUser=role==='user';
+  const div=document.createElement('div');
+  div.style.cssText=`display:flex;${isUser?'justify-content:flex-end':''}`;
+  div.innerHTML=`<div style="max-width:85%;padding:10px 14px;border-radius:12px;font-size:12px;line-height:1.7;
+    background:${isUser?'var(--accent)':'var(--bg2)'};color:${isUser?'#fff':'var(--text)'};
+    border:${isUser?'none':'1px solid var(--border)'};white-space:pre-wrap;word-break:break-word">${esc(content)}</div>`;
+  el.appendChild(div);el.scrollTop=el.scrollHeight;
+}
+
+async function sendChat(){
+  const inp=q('chatInput');
+  const msg=(inp?.value||'').trim();if(!msg)return;
+  const eid=q('chatExpSel')?.value||'';
+  inp.value='';appendChatMsg('user',msg);
+  const btn=q('chatSendBtn');btn.disabled=true;btn.textContent='…';
+  const typing=document.createElement('div');
+  typing.id='chatTyping';
+  typing.style.cssText='padding:10px 14px;font-size:12px;color:var(--muted);background:var(--bg2);border:1px solid var(--border);border-radius:12px;max-width:85%;';
+  typing.textContent='🤖 Thinking…';
+  const msgs=q('chatMessages');if(msgs){msgs.appendChild(typing);msgs.scrollTop=msgs.scrollHeight;}
+  let fullResp='';
+  try{
+    const es=new EventSource(`/agent/chat/stream?message=${encodeURIComponent(msg)}&experiment_id=${encodeURIComponent(eid)}`);
+    es.onmessage=ev=>{
+      if(ev.data==='"__DONE__"'||ev.data==='__DONE__'){es.close();
+        const t=q('chatTyping');if(t)t.remove();
+        if(fullResp)appendChatMsg('assistant',fullResp);
+        btn.disabled=false;btn.textContent='Send';return;}
+      let chunk;try{chunk=JSON.parse(ev.data);}catch{chunk=ev.data;}
+      fullResp+=chunk;
+      const t=q('chatTyping');if(t)t.textContent='🤖 '+fullResp.slice(-60)+'…';};
+    es.onerror=()=>{es.close();
+      const t=q('chatTyping');if(t)t.remove();
+      if(fullResp)appendChatMsg('assistant',fullResp);
+      btn.disabled=false;btn.textContent='Send';};
+  }catch(e){const t=q('chatTyping');if(t)t.remove();appendChatMsg('assistant','Error: '+e.message);btn.disabled=false;btn.textContent='Send';}
+}
+
+function sendQuickChat(msg){const inp=q('chatInput');if(inp)inp.value=msg;sendChat();}
+
+async function loadInsightsSidebar(eid){
+  const card=q('agentInsightsCard');const content=q('agentInsightsContent');
+  if(!card||!content)return;
+  try{
+    const r=await fetch('/experiments/'+eid+'/agent-analyze',{headers:ah()});
+    if(!r.ok)return;const d=await r.json();const ins=d.insights||{};
+    if(!ins.executive_summary)return;
+    card.style.display='';
+    content.innerHTML=`
+      ${ins.executive_summary?`<p style="font-size:12px;font-weight:600;margin-bottom:10px;line-height:1.7">${esc(ins.executive_summary)}</p>`:''}
+      ${(ins.key_findings||[]).slice(0,3).map(f=>`<div style="font-size:11px;padding:3px 0">🔑 ${esc(f)}</div>`).join('')}
+      ${(ins.risks_and_caveats||[]).slice(0,2).map(r=>`<div style="font-size:11px;padding:3px 0;color:var(--yellow)">⚠️ ${esc(r)}</div>`).join('')}
+      ${(ins.next_steps||[]).length?`<div style="margin-top:8px;font-size:11px;color:var(--green)">→ ${esc(ins.next_steps[0])}</div>`:''}`;
+  }catch(e){}
+}
+
+</script>

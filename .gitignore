@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.~
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment / secrets
+.env
+*.env
+
+# Data files — don't commit datasets
+data/*.csv
+data/*.xlsx
+data/*.json
+data/*.parquet
+!data/.gitkeep
+
+# Trained models & experiments — too large for git
+experiments/
+models/
+mlruns/
+catboost_info/
+*.pkl
+*.joblib
+*.h5
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node (if any)
+node_modules/

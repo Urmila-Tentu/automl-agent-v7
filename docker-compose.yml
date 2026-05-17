@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  # ── AutoML API ──────────────────────────────────────────────────────────────
+  automl-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: automl-api
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - N_TRIALS_OPTUNA=20
+      - ENABLE_DEEP_LEARNING=false    # set true for large datasets
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./experiments:/app/experiments
+      - ./logs:/app/logs
+    depends_on:
+      - mlflow
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── MLflow Tracking ──────────────────────────────────────────────────────────
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.13.0
+    container_name: mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+    command: >
+      mlflow server
+        --backend-store-uri sqlite:////mlflow/mlruns/mlflow.db
+        --default-artifact-root /mlflow/mlruns
+        --host 0.0.0.0
+        --port 5000
+    restart: unless-stopped
+
+  # ── Prometheus monitoring ────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+
+  # ── Grafana dashboard ────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  grafana_data:
