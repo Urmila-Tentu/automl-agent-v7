@@ -115,7 +115,7 @@ Automated profiling for missing values, distributions, imbalance, and correlatio
 
 Performance comparison across multiple ML models and evaluation metrics.
 
-![Metric Comparison](screenshots/metric_comparison.png)
+![Metric Comparison](screenshots/metric_comparision.png)
 
 ---
 
