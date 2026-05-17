@@ -4,15 +4,15 @@ A fully autonomous Machine Learning platform. The LLM agent analyzes your datase
 
 ## 🤖 Agentic Features (NEW)
 
-| Feature | Description |
-|---------|-------------|
+| Feature                    | Description                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------- |
 | **Smart Dataset Analysis** | Claude profiles your data: shape, missingness, skewness, imbalance, correlations |
-| **LLM Strategy Planning** | Agent reasons about and selects models, preprocessing, HPO trial count, metric |
-| **Adaptive Reflection** | After training, agent reviews results and can trigger a second training pass |
-| **Plain-English Insights** | Executive summary, key findings, risks, and next steps — no ML jargon |
-| **AI Chat** | Ask the agent anything about your data, model, or results |
-| **Streaming Reasoning** | Watch Claude think in real time during planning |
-| **Rule-Based Fallback** | Works without an API key using intelligent heuristics |
+| **LLM Strategy Planning**  | Agent reasons about and selects models, preprocessing, HPO trial count, metric   |
+| **Adaptive Reflection**    | After training, agent reviews results and can trigger a second training pass     |
+| **Plain-English Insights** | Executive summary, key findings, risks, and next steps — no ML jargon            |
+| **AI Chat**                | Ask the agent anything about your data, model, or results                        |
+| **Streaming Reasoning**    | Watch Claude think in real time during planning                                  |
+| **Rule-Based Fallback**    | Works without an API key using intelligent heuristics                            |
 
 ## 🚀 Quick Start
 
@@ -58,6 +58,104 @@ LLM Agent Brain (Claude claude-sonnet-4-5)
     ├── reflect()                ← tool call: request_more_training
     └── generate_insights()     ← tool call: generate_final_insights
 ```
+
+## 📸 Screenshots
+
+### 🤖 Agentic AutoML Dashboard
+
+Main interface for autonomous ML workflow execution and agent interaction.
+
+![Agentic Dashboard](screenshots/agentic.png)
+
+---
+
+### 🧠 Agentic Training Interface
+
+LLM-powered orchestration dashboard for intelligent pipeline planning and execution.
+
+![Agentic AutoML](screenshots/agentic_automl.png)
+
+---
+
+### 📊 EDA Dashboard
+
+Interactive exploratory data analysis dashboard with automated visual insights.
+
+![EDA Dashboard](screenshots/eda_dashboard.png)
+
+---
+
+### 📑 Automated EDA Reports
+
+Generated statistical reports and feature-level analysis.
+
+#### Report 1
+
+![EDA Report 1](screenshots/eda_report1.png)
+
+#### Report 2
+
+![EDA Report 2](screenshots/eda_report2.png)
+
+#### Report 3
+
+![EDA Report 3](screenshots/eda_report3.png)
+
+---
+
+### 🧾 Dataset Profiling
+
+Automated profiling for missing values, distributions, imbalance, and correlations.
+
+![Data Profile](screenshots/data_profile.png)
+
+---
+
+### 📈 Model Metrics Comparison
+
+Performance comparison across multiple ML models and evaluation metrics.
+
+![Metric Comparison](screenshots/metric_comparison.png)
+
+---
+
+### 🩺 Model Doctor Analysis
+
+Detailed diagnostics and model health evaluation dashboard.
+
+![Model Doctor](screenshots/model_doctor.png)
+
+---
+
+### 🎯 Counterfactual Explanations
+
+AI-generated counterfactual analysis for interpretability and decision insights.
+
+#### Counterfactual Analysis 1
+
+![Counterfactual 1](screenshots/counterfactual1.png)
+
+#### Counterfactual Analysis 2
+
+![Counterfactual 2](screenshots/counterfactual2.png)
+
+---
+
+### 🧪 Experiment Tracking
+
+Track experiments, configurations, and training outcomes across runs.
+
+![Experiments](screenshots/experiments_demo.png)
+
+---
+
+### 📉 Sensitivity Analysis
+
+Feature sensitivity analysis for understanding model robustness and behavior.
+
+![Sensitivity Results](screenshots/sensivity_results.png)
+
+---
 
 ## 🧰 All Features
 
